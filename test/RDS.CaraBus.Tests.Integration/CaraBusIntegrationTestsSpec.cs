@@ -247,7 +247,7 @@ namespace RDS.CaraBus.Tests.Integration
         public async Task PublishSubscribe_ShouldLimitSimultaneouslyRunningHandlersToSpecifiedValue_IfMaxConcurrentHandlersSpecified()
         {
             // given
-            var delivery = new CountdownEvent(5);
+            var delivery = new CountdownEvent(10);
 
             _sut.Subscribe<TestMessage>(m =>
             {
