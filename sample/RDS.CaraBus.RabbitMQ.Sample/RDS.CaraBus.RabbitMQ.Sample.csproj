@@ -1,8 +1,13 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp1.1</TargetFramework>
+    <!--<TargetFrameworks>netstandard1.6;net462</TargetFrameworks>-->
+    <TargetFramework>net462</TargetFramework>
   </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\RDS.CaraBus.RabbitMQ\RDS.CaraBus.RabbitMQ.csproj" />
+  </ItemGroup>
 
 </Project>
