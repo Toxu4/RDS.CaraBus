@@ -1,5 +1,14 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
+  <Import Project="..\..\common.props" />
+
+  <PropertyGroup>
+    <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>
+    <Description>Lightweight service bus for .NET</Description>
+    <AssemblyName>RDS.CaraBus</AssemblyName>
+    <PackageId>RDS.CaraBus</PackageId>
+  </PropertyGroup>
+
   <PropertyGroup>
     <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>
   </PropertyGroup>

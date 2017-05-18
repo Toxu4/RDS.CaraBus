@@ -1,0 +1,15 @@
+<Project>
+  <Import Project="version.props" />
+  <PropertyGroup>
+    <PackageProjectUrl>https://github.com/Toxu4/RDS.CaraBus</PackageProjectUrl>
+    <PackageLicenseUrl>https://github.com/Toxu4/RDS.CaraBus/blob/master/LICENSE</PackageLicenseUrl>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/Toxu4/RDS.CaraBus</RepositoryUrl>
+    <Authors>Anton Krasilshchikov, Rambler Digital Solutions</Authors>
+    <PackageTags>servicebus;bus;rabbitmq;lightweight;easy;simple</PackageTags>
+    <Product>RDS.CaraBus</Product>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <RepositoryType>git</RepositoryType>
+    <NoWarn>1701;1702;1705;1591</NoWarn>
+  </PropertyGroup>
+</Project>
