@@ -19,6 +19,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 Console.WriteLine("Select sample:");
                 Console.WriteLine("1 - Single publisher and single subscriber");
                 Console.WriteLine("2 - Single publisher and multiple subscribers");
+                Console.WriteLine("3 - Single publisher and multiple subscribers that shares one message queue");
                 Console.WriteLine("empty string - exit");
 
                 Console.Write(">");
@@ -36,7 +37,10 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     case "2":
                         SinglePublisherMultipleSubscribers();
                         break;
-                }                
+                    case "3":
+                        SinglePublisherMultipleSubscribersThatSharesQueue();
+                        break;
+                }
             }
         }
 
@@ -104,5 +108,43 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Stop();
             }
         }
+
+        private static void SinglePublisherMultipleSubscribersThatSharesQueue()
+        {
+            Console.Clear();
+            Console.WriteLine("Single publisher and multiple subscribers that shares one message queue");
+            Console.WriteLine("Enter message text to send or empty string to exit:");
+
+            using (var caraBus = new CaraBus())
+            {
+                var options = new SubscribeOptions {Exclusive = true};
+
+                caraBus.Subscribe<Message>(m =>
+                {
+                    Console.WriteLine($"Subscriber 1 received message: {m.Text}");
+                }, options);
+
+                caraBus.Subscribe<Message>(m =>
+                {
+                    Console.WriteLine($"Subscriber 2 received message: {m.Text}");
+                }, options);
+
+                caraBus.Start();
+
+                while (true)
+                {
+                    var text = Console.ReadLine();
+                    if (text == string.Empty)
+                    {
+                        break;
+                    }
+
+                    caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
+                }
+
+                caraBus.Stop();
+            }
+        }
+
     }
 }
