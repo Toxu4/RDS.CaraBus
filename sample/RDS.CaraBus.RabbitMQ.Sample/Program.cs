@@ -14,8 +14,11 @@ namespace RDS.CaraBus.RabbitMQ.Sample
         {           
             while (true)
             {
+                Console.Clear();
+
                 Console.WriteLine("Select sample:");
-                Console.WriteLine("1 - Single publisher and single subscription");
+                Console.WriteLine("1 - Single publisher and single subscriber");
+                Console.WriteLine("2 - Single publisher and multiple subscribers");
                 Console.WriteLine("empty string - exit");
 
                 Console.Write(">");
@@ -30,15 +33,17 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     case "1":
                         SinglePublisherSingleSubscriber();
                         break;
-                }
-
-                Console.Clear();
+                    case "2":
+                        SinglePublisherMultipleSubscribers();
+                        break;
+                }                
             }
         }
 
         private static void SinglePublisherSingleSubscriber()
         {
-            Console.WriteLine("Single publisher and single subscription");
+            Console.Clear();
+            Console.WriteLine("Single publisher and single subscriber");
             Console.WriteLine("Enter message text to send or empty string to exit:");
 
             using (var caraBus = new CaraBus())
@@ -46,6 +51,41 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Received message: {m.Text}");
+                });
+
+                caraBus.Start();
+
+                while (true)
+                {
+                    var text = Console.ReadLine();
+                    if (text == string.Empty)
+                    {
+                        break;
+                    }
+
+                    caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
+                }
+
+                caraBus.Stop();
+            }
+        }
+
+        private static void SinglePublisherMultipleSubscribers()
+        {
+            Console.Clear();
+            Console.WriteLine("Single publisher and multiple subscribers");
+            Console.WriteLine("Enter message text to send or empty string to exit:");
+
+            using (var caraBus = new CaraBus())
+            {
+                caraBus.Subscribe<Message>(m =>
+                {
+                    Console.WriteLine($"Subscriber 1 received message: {m.Text}");
+                });
+
+                caraBus.Subscribe<Message>(m =>
+                {
+                    Console.WriteLine($"Subscriber 2 received message: {m.Text}");
                 });
 
                 caraBus.Start();
