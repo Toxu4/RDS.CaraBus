@@ -1,19 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <Import Project="..\..\common.props" />
+  
   <PropertyGroup>
     <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>
-    <Description>Lightweight service bus for .NET</Description>
-    <VersionPrefix>0.0.1</VersionPrefix>
-    <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <Product>RDS.CaraBus.RabbitMQ</Product>
+    <Description>An RabbitMQ implementation of RDS.CaraBus</Description>
     <AssemblyName>RDS.CaraBus.RabbitMQ</AssemblyName>
     <PackageId>RDS.CaraBus.RabbitMQ</PackageId>
-    <PackageTags>servicebus;bus;rabbitmq;lightweight;easy;simple</PackageTags>
-    <PackageProjectUrl>https://github.com/Toxu4/RDS.CaraBus</PackageProjectUrl>
-    <PackageLicenseUrl>http://www.opensource.org/licenses/mit-license.php</PackageLicenseUrl>
-    <RepositoryType>git</RepositoryType>
-    <RepositoryUrl>https://github.com/Toxu4/RDS.CaraBus</RepositoryUrl>
-    <Authors>Anton Krasilshchikov</Authors>
-    <NoWarn>1701;1702;1705;1591</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -22,8 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RDS.CaraBus\RDS.CaraBus.csproj">
-      <ReferenceOutputAssembly></ReferenceOutputAssembly>
-    </ProjectReference>
+    <ProjectReference Include="..\RDS.CaraBus\RDS.CaraBus.csproj"></ProjectReference>
   </ItemGroup>
 </Project>
