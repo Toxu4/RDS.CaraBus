@@ -1,2 +1,2 @@
 # RDS.CaraBus
-Liteweight service bus for .NET
+Lightweight service bus for .NET
