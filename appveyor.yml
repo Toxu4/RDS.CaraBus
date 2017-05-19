@@ -1,0 +1,51 @@
+configuration: Release
+version: '{build}'
+branches:
+  only:
+  - master
+image: Visual Studio 2017
+
+init:
+  - git config --global core.autocrlf input
+
+install:
+- ps: >-
+    set -name versionPrefix -scope global -value ([xml](Get-Content version.props)).Project.PropertyGroup.VersionPrefix
+
+    $env:versionPrefix = $versionPrefix
+
+    $env:package_suffix = "-alpha$env:appveyor_build_number"
+
+    update-appveyorbuild -Version "$env:versionPrefix$env:package_suffix"
+
+# build_script:
+# - ps: .\BuildAndPack.ps1 -VersionSuffix "$env:package_suffix" -GitCommitId "$env:appveyor_repo_commit" -MsBuildArgs @(, "/logger:C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll")
+
+before_build:
+- cmd: dotnet restore
+
+after_build:
+- ps: >-    
+    md -Name nupkg
+
+    .\build\pack.ps1
+
+skip_branch_with_pr: true
+skip_tags: true
+skip_commits:
+  files:
+    - '**/*.md'
+
+nuget:
+  disable_publish_on_pr: true
+
+pull_requests:  
+  do_not_increment_build_number: true
+
+test:
+  assemblies:
+  - test\RDS.CaraBus.RabbitMQ.Tests.Unit\bin\Release\net462\RDS.CaraBus.RabbitMQ.Tests.Unit.dll
+
+artifacts:
+- path: nupkg\*.nupkg
+  name: nuget-packages
