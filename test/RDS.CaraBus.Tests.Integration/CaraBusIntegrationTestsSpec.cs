@@ -206,7 +206,7 @@ namespace RDS.CaraBus.Tests.Integration
             Task.WaitAll(publish1_1, publish1_2, publish2_1, publish2_2);
 
             // then
-            delivered.Wait(TimeSpan.FromSeconds(10));
+            delivered.Wait(TimeSpan.FromSeconds(2));
 
             Assert.That(scope1ReceivedValue, Is.EqualTo($"{scope1SentValue}{scope1SentValue}"));
             Assert.That(scope2ReceivedValue, Is.EqualTo($"{scope2SentValue}{scope2SentValue}"));
@@ -235,11 +235,12 @@ namespace RDS.CaraBus.Tests.Integration
                 await _sut.PublishAsync(new TestMessage());
             }
 
-            delivery.Wait();
+            delivery.Wait(TimeSpan.FromSeconds(10));
 
             var executioTime = sw.Elapsed;
 
             // then
+            Assert.That(delivery.CurrentCount, Is.EqualTo(0));
             Assert.That(executioTime.Seconds, Is.GreaterThanOrEqualTo(5));
         }
 
@@ -266,7 +267,7 @@ namespace RDS.CaraBus.Tests.Integration
                 await _sut.PublishAsync(new TestMessage());
             }
 
-            delivery.Wait();
+            delivery.Wait(TimeSpan.FromSeconds(15));
 
             sw.Stop();
             var executioTime = sw.Elapsed;

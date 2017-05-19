@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.6
+VisualStudioVersion = 15.0.26228.12
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RDS.CaraBus.RabbitMQ", "src\RDS.CaraBus.RabbitMQ\RDS.CaraBus.RabbitMQ.csproj", "{DCCA7D27-1BB4-46F0-BDA2-1281D1016420}"
 EndProject
@@ -24,6 +24,12 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution 
 		README.md = README.md
 		version.props = version.props
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RDS.CaraBus.InMemory", "src\RDS.CaraBus.InMemory\RDS.CaraBus.InMemory.csproj", "{1AD4C184-C561-4D87-803B-6AB34E82F5C4}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RDS.CaraBus.InMemory.Tests.Unit", "test\RDS.CaraBus.InMemory.Tests.Unit\RDS.CaraBus.InMemory.Tests.Unit.csproj", "{41CB6C62-0FBB-4E73-AEA9-E12740DF916D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RDS.CaraBus.InMemory.Tests.Integration", "test\RDS.CaraBus.InMemory.Tests.Integration\RDS.CaraBus.InMemory.Tests.Integration.csproj", "{8376DC50-E374-46B1-A480-FA079B6ABD3B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -59,6 +65,18 @@ Global
 		{0F05F704-E6CA-4600-AD3F-B3261008D796}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{0F05F704-E6CA-4600-AD3F-B3261008D796}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{0F05F704-E6CA-4600-AD3F-B3261008D796}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1AD4C184-C561-4D87-803B-6AB34E82F5C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1AD4C184-C561-4D87-803B-6AB34E82F5C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1AD4C184-C561-4D87-803B-6AB34E82F5C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1AD4C184-C561-4D87-803B-6AB34E82F5C4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{41CB6C62-0FBB-4E73-AEA9-E12740DF916D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{41CB6C62-0FBB-4E73-AEA9-E12740DF916D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{41CB6C62-0FBB-4E73-AEA9-E12740DF916D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{41CB6C62-0FBB-4E73-AEA9-E12740DF916D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8376DC50-E374-46B1-A480-FA079B6ABD3B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8376DC50-E374-46B1-A480-FA079B6ABD3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8376DC50-E374-46B1-A480-FA079B6ABD3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8376DC50-E374-46B1-A480-FA079B6ABD3B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

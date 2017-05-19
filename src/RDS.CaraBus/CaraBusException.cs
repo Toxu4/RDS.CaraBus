@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace RDS.CaraBus.RabbitMQ
+namespace RDS.CaraBus
 {
     public class CaraBusException : Exception
     {

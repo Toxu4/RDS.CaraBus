@@ -23,9 +23,9 @@ namespace RDS.CaraBus.RabbitMQ
         private readonly Lazy<IConnection> _connection;
         private readonly Lazy<IModel> _publishChannel;
 
-        private const string _defaultQueueName = "RDS.CaraBus.DefaultQueue|faiujf09834fyh2f87y29x87yjxf";
+        private const string DefaultQueueName = "RDS.CaraBus.DefaultQueue|faiujf09834fyh2f87y29x87yjxf";
 
-        private Object locker = new Object();
+        private readonly object _locker = new object();
 
         public CaraBus(Options options = null)
         {
@@ -41,96 +41,20 @@ namespace RDS.CaraBus.RabbitMQ
             {
                 var channel = _connection.Value.CreateModel();
 
-                channel.QueueDeclare(_defaultQueueName, durable: true, exclusive: false);
-                channel.BasicConsume(_defaultQueueName, true, new EventingBasicConsumer(channel));
+                channel.QueueDeclare(DefaultQueueName, durable: true, exclusive: false);
+                channel.BasicConsume(DefaultQueueName, true, new EventingBasicConsumer(channel));
 
                 return channel;
             });
         }
 
-        public Task PublishAsync<T>(T message, PublishOptions options = null) where T : class 
+        public bool IsRunning()
         {
-            if (!IsRunning())
-            {
-                throw new CaraBusException("Should be running");
-            }
-
-            options = options ?? _defaultPublishOptions;
-
-            var envelope = new MessageEnvelope(message);
-            var serializedEnvelope = JsonConvert.SerializeObject(envelope);
-            var buffer = Encoding.UTF8.GetBytes(serializedEnvelope);
-
-            foreach (var type in envelope.InheritanceChain.Union(envelope.Interfaces))
-            {
-                var exchangeName = $"{options.Scope}|{type.FullName}";
-                _publishChannel.Value.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
-                _publishChannel.Value.QueueBind(_defaultQueueName, exchangeName, string.Empty);
-                _publishChannel.Value.BasicPublish(exchangeName, "", null, buffer);
-            }
-
-            return Task.CompletedTask;
+            return _isRunning;
         }
-
-        public void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class
-        {
-            if (IsRunning())
-            {
-                throw new CaraBusException("Should be stopped");
-            }
-
-            _subscribeActions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
-        }
-
-        private void InternalSubscribe<T>(Action<T> handler, SubscribeOptions options) where T : class
-        {            
-            var exchangeName = $"{options.Scope}|{typeof(T).FullName}";
-            var queueName = $"{options.Scope}|{typeof(T).FullName}|{ (options.Exclusive ? "Exclusive" : Guid.NewGuid().ToString()) }";
-            var maxConcurrentHandlers = options.MaxConcurrentHandlers > 0 ? options.MaxConcurrentHandlers : (ushort)1;
-
-            var channel = _connection.Value.CreateModel();
-
-            channel.BasicQos(0, maxConcurrentHandlers, true);        
-            channel.ExchangeDeclare(exchangeName, "fanout", durable:true, autoDelete: true);
-            channel.QueueDeclare(queueName, durable:true, exclusive: false);
-            channel.QueueBind(queueName, exchangeName, string.Empty);
-
-            var semaphore = new SemaphoreSlim(maxConcurrentHandlers);
-
-            var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, ea) =>
-            {
-                Task.Factory.StartNew(() =>
-                {
-                    semaphore.Wait();
-                    try
-                    {
-                        Received(channel, handler, ea);
-                    }
-                    finally
-                    {
-                        semaphore.Release();
-                    }                    
-                });
-            };
-            channel.BasicConsume(queueName, false, consumer);
-        }
-
-        private static void Received<T>(IModel channel, Action<T> handler, BasicDeliverEventArgs ea) where T : class
-        {
-            var bodyString = Encoding.UTF8.GetString(ea.Body);
-            var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
-            var message = JsonConvert.DeserializeObject(envelope.Data, envelope.InheritanceChain.Last());
-
-            handler((T)message);
-
-            channel.BasicAck(ea.DeliveryTag, false);
-        }
-
-
         public void Start()
         {
-            lock (locker)
+            lock (_locker)
             {
                 if (IsRunning())
                 {
@@ -148,7 +72,7 @@ namespace RDS.CaraBus.RabbitMQ
 
         public void Stop()
         {
-            lock (locker)
+            lock (_locker)
             {
                 if (!IsRunning())
                 {
@@ -161,9 +85,82 @@ namespace RDS.CaraBus.RabbitMQ
             }
         }
 
-        public bool IsRunning()
+        public Task PublishAsync<T>(T message, PublishOptions options = null) where T : class
         {
-            return _isRunning;
+            if (!IsRunning())
+            {
+                throw new CaraBusException("Should be running");
+            }
+
+            options = options ?? _defaultPublishOptions;
+
+            var envelope = new MessageEnvelope(message);
+            var serializedEnvelope = JsonConvert.SerializeObject(envelope);
+            var buffer = Encoding.UTF8.GetBytes(serializedEnvelope);
+
+            foreach (var type in envelope.InheritanceChain.Union(envelope.Interfaces))
+            {
+                var exchangeName = $"{options.Scope}|{type.FullName}";
+                _publishChannel.Value.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
+                _publishChannel.Value.QueueBind(DefaultQueueName, exchangeName, string.Empty);
+                _publishChannel.Value.BasicPublish(exchangeName, "", null, buffer);
+            }
+
+            return Task.CompletedTask;
+        }
+
+        public void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class
+        {
+            if (IsRunning())
+            {
+                throw new CaraBusException("Should be stopped");
+            }
+
+            _subscribeActions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
+        }
+        private void InternalSubscribe<T>(Action<T> handler, SubscribeOptions options) where T : class
+        {
+            var exchangeName = $"{options.Scope}|{typeof(T).FullName}";
+            var queueName = $"{options.Scope}|{typeof(T).FullName}|{ (options.Exclusive ? "Exclusive" : Guid.NewGuid().ToString()) }";
+            var maxConcurrentHandlers = options.MaxConcurrentHandlers > 0 ? options.MaxConcurrentHandlers : (ushort)1;
+
+            var channel = _connection.Value.CreateModel();
+
+            channel.BasicQos(0, maxConcurrentHandlers, true);
+            channel.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
+            channel.QueueDeclare(queueName, durable: true, exclusive: false);
+            channel.QueueBind(queueName, exchangeName, string.Empty);
+
+            var semaphore = new SemaphoreSlim(maxConcurrentHandlers);
+
+            var consumer = new EventingBasicConsumer(channel);
+            consumer.Received += (model, ea) =>
+            {
+                Task.Factory.StartNew(() =>
+                {
+                    semaphore.Wait();
+                    try
+                    {
+                        Received(channel, handler, ea);
+                    }
+                    finally
+                    {
+                        semaphore.Release();
+                    }
+                });
+            };
+            channel.BasicConsume(queueName, false, consumer);
+        }
+
+        private static void Received<T>(IModel channel, Action<T> handler, BasicDeliverEventArgs ea) where T : class
+        {
+            var bodyString = Encoding.UTF8.GetString(ea.Body);
+            var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
+            var message = JsonConvert.DeserializeObject(envelope.Data, envelope.InheritanceChain.Last());
+
+            handler((T)message);
+
+            channel.BasicAck(ea.DeliveryTag, false);
         }
 
         public void Dispose()
