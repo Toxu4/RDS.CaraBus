@@ -7,7 +7,7 @@
     <Description>An RabbitMQ implementation of RDS.CaraBus</Description>
     <AssemblyName>RDS.CaraBus.RabbitMQ</AssemblyName>
     <PackageId>RDS.CaraBus.RabbitMQ</PackageId>
-    <Version>0.0.2-preview1</Version>
+    <PackageTags>servicebus;bus;rabbitmq;lightweight;easy;simple</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>

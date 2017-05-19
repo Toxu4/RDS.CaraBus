@@ -7,8 +7,6 @@
     <Description>An inmemory implementation of RDS.CaraBus</Description>
     <AssemblyName>RDS.CaraBus.InMemory</AssemblyName>
     <PackageId>RDS.CaraBus.InMemory</PackageId>
-    <Version>0.0.2-preview1</Version>
-    <AssemblyVersion>0.0.1.0</AssemblyVersion>
     <PackageTags>servicebus;bus;lightweight;easy;simple</PackageTags>
   </PropertyGroup>
 

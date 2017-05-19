@@ -19,6 +19,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RDS.CaraBus.Tests.Unit", "t
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{E4349D24-7845-4FC3-92AB-16C3BA29BBA8}"
 	ProjectSection(SolutionItems) = preProject
+		appveyor.yml = appveyor.yml
 		LICENSE = LICENSE
 		README.md = README.md
 		version.props = version.props
@@ -32,7 +33,6 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RDS.CaraBus.InMemory.Tests.
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{4E7ED7BE-0E39-40D8-8FDC-D381735C3032}"
 	ProjectSection(SolutionItems) = preProject
-		appveyor.yml = appveyor.yml
 		build\common.props = build\common.props
 		build\pack.ps1 = build\pack.ps1
 	EndProjectSection
