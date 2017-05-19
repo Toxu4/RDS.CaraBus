@@ -1,5 +1,5 @@
 <Project>
-  <Import Project="version.props" />
+  <Import Project="..\version.props" />
   <PropertyGroup>
     <PackageProjectUrl>https://github.com/Toxu4/RDS.CaraBus</PackageProjectUrl>
     <PackageLicenseUrl>https://github.com/Toxu4/RDS.CaraBus/blob/master/LICENSE</PackageLicenseUrl>
