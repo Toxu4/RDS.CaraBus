@@ -8,19 +8,25 @@ namespace RDS.CaraBus.InMemory
     {
         private readonly ConcurrentQueue<Action<object>> _subscribersActions = new ConcurrentQueue<Action<object>>();
 
+        private readonly object _locker = new object();
+
         protected override void NotifySubscribers(object message)
         {
-            if (!_subscribersActions.TryDequeue(out var subscriberAction))
+            Action<object> subscriberAction;
+            lock (_locker)
             {
-                return;
+                if (!_subscribersActions.TryDequeue(out subscriberAction))
+                {
+                    return;
+                }
+
+                _subscribersActions.Enqueue(subscriberAction);
             }
-                
+
             Task.Factory.StartNew(() =>
             {
                 subscriberAction.Invoke(message);
             });
-
-            _subscribersActions.Enqueue(subscriberAction);
         }
 
         public override void Subscribe(Action<object> subscriberAction)
