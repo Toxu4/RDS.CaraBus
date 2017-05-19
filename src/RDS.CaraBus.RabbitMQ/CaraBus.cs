@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading;
@@ -7,6 +6,7 @@ using System.Threading.Tasks;
 using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
+using System.Collections.Concurrent;
 
 namespace RDS.CaraBus.RabbitMQ
 {
@@ -16,7 +16,7 @@ namespace RDS.CaraBus.RabbitMQ
         private readonly PublishOptions _defaultPublishOptions = new PublishOptions();
         private readonly SubscribeOptions _defaultSubscribeOptions = new SubscribeOptions();
 
-        private readonly List<Action> _subscriptions = new List<Action>();
+        private ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
 
         private bool _isRunning;
 
@@ -24,6 +24,8 @@ namespace RDS.CaraBus.RabbitMQ
         private readonly Lazy<IModel> _publishChannel;
 
         private const string _defaultQueueName = "RDS.CaraBus.DefaultQueue|faiujf09834fyh2f87y29x87yjxf";
+
+        private Object locker = new Object();
 
         public CaraBus(Options options = null)
         {
@@ -77,12 +79,11 @@ namespace RDS.CaraBus.RabbitMQ
                 throw new CaraBusException("Should be stopped");
             }
 
-            _subscriptions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
+            _subscribeActions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
         }
 
         private void InternalSubscribe<T>(Action<T> handler, SubscribeOptions options) where T : class
-        {
-            
+        {            
             var exchangeName = $"{options.Scope}|{typeof(T).FullName}";
             var queueName = $"{options.Scope}|{typeof(T).FullName}|{ (options.Exclusive ? "Exclusive" : Guid.NewGuid().ToString()) }";
             var maxConcurrentHandlers = options.MaxConcurrentHandlers > 0 ? options.MaxConcurrentHandlers : (ushort)1;
@@ -129,26 +130,35 @@ namespace RDS.CaraBus.RabbitMQ
 
         public void Start()
         {
-            if (IsRunning())
+            lock (locker)
             {
-                throw new CaraBusException("Already running");
+                if (IsRunning())
+                {
+                    throw new CaraBusException("Already running");
+                }
+
+                foreach (var subscribeAction in _subscribeActions)
+                {
+                    subscribeAction.Invoke();
+                }
+
+                _isRunning = true;
             }
-
-            _subscriptions.ForEach(s => s.Invoke());
-
-            _isRunning = true;
         }
 
         public void Stop()
         {
-            if (!IsRunning())
+            lock (locker)
             {
-                throw new CaraBusException("Already stopped");
+                if (!IsRunning())
+                {
+                    throw new CaraBusException("Already stopped");
+                }
+
+                _subscribeActions = new ConcurrentBag<Action>();
+
+                _isRunning = false;
             }
-
-            _subscriptions.Clear();
-
-            _isRunning = false;
         }
 
         public bool IsRunning()
