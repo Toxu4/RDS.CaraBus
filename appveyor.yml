@@ -45,6 +45,8 @@ pull_requests:
 test:
   assemblies:
   - test\RDS.CaraBus.RabbitMQ.Tests.Unit\bin\Release\net462\RDS.CaraBus.RabbitMQ.Tests.Unit.dll
+  - test\RDS.CaraBus.InMemory.Tests.Unit\bin\Release\net462\RDS.CaraBus.InMemory.Tests.Unit.dll
+  - test\RDS.CaraBus.InMemory.Tests.Integration\bin\Release\net462\RDS.CaraBus.InMemory.Tests.Integration.dll
 
 artifacts:
 - path: nupkg\*.nupkg
