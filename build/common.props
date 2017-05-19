@@ -5,8 +5,7 @@
     <PackageLicenseUrl>https://github.com/Toxu4/RDS.CaraBus/blob/master/LICENSE</PackageLicenseUrl>
     <RepositoryType>git</RepositoryType>
     <RepositoryUrl>https://github.com/Toxu4/RDS.CaraBus</RepositoryUrl>
-    <Authors>Anton Krasilshchikov, Rambler Digital Solutions</Authors>
-    <PackageTags>servicebus;bus;rabbitmq;lightweight;easy;simple</PackageTags>
+    <Authors>Anton Krasilshchikov, Rambler Digital Solutions</Authors>    
     <Product>RDS.CaraBus</Product>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
     <RepositoryType>git</RepositoryType>

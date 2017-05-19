@@ -5,3 +5,4 @@ Lightweight service bus for .NET
 --- | ---
 **RDS.CaraBus** | [![NuGet Version](https://buildstats.info/nuget/RDS.CaraBus)](https://www.nuget.org/packages/RDS.CaraBus/) 
 **RDS.CaraBus.RabbitMQ** | [![NuGet Version](https://buildstats.info/nuget/RDS.CaraBus.RabbitMQ)](https://www.nuget.org/packages/RDS.CaraBus.RabbitMQ/)
+**RDS.CaraBus.InMemory** | [![NuGet Version](https://buildstats.info/nuget/RDS.CaraBus.InMemory)](https://www.nuget.org/packages/RDS.CaraBus.InMemory/)
