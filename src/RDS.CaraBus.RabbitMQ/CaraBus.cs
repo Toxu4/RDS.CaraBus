@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -7,6 +8,7 @@ using Newtonsoft.Json;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 
 namespace RDS.CaraBus.RabbitMQ
 {
@@ -17,6 +19,8 @@ namespace RDS.CaraBus.RabbitMQ
         private readonly SubscribeOptions _defaultSubscribeOptions = new SubscribeOptions();
 
         private ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
+
+        private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
 
         private bool _isRunning;
 
@@ -98,7 +102,15 @@ namespace RDS.CaraBus.RabbitMQ
             var serializedEnvelope = JsonConvert.SerializeObject(envelope);
             var buffer = Encoding.UTF8.GetBytes(serializedEnvelope);
 
-            foreach (var type in envelope.InheritanceChain.Union(envelope.Interfaces))
+            var types = _typesCache
+                .GetOrAdd(
+                    message.GetType(),
+                    (mt) => 
+                        mt
+                            .InheritanceChain()
+                            .Union(mt.GetInterfaces()));
+
+            foreach (var type in types)
             {
                 var exchangeName = $"{options.Scope}|{type.FullName}";
                 _publishChannel.Value.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
@@ -143,7 +155,7 @@ namespace RDS.CaraBus.RabbitMQ
                     {
                         var bodyString = Encoding.UTF8.GetString(ea.Body);
                         var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
-                        var message = JsonConvert.DeserializeObject(envelope.Data, envelope.InheritanceChain.Last());
+                        var message = JsonConvert.DeserializeObject(envelope.Data, envelope.Type);
 
                         handler.Invoke((T)message);
                     }

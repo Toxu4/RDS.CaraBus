@@ -1,16 +1,11 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
 using Newtonsoft.Json;
 
 namespace RDS.CaraBus.RabbitMQ
 {
     internal class MessageEnvelope
     {
-        public List<Type> InheritanceChain { get; set; }
-        public List<Type> Interfaces { get; set; }
-
+        public Type Type { get; set; }
         public string Data { get; set; }
 
         public MessageEnvelope()
@@ -20,9 +15,8 @@ namespace RDS.CaraBus.RabbitMQ
 
         public MessageEnvelope(object data)
         {
+            Type = data.GetType();
             Data = JsonConvert.SerializeObject(data);
-            Interfaces = data.GetType().GetInterfaces().ToList();
-            InheritanceChain = data.GetType().InheritanceChain();
         }
     }
 }

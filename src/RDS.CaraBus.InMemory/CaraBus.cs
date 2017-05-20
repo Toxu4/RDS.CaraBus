@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Threading;
@@ -16,6 +17,8 @@ namespace RDS.CaraBus.InMemory
 
         private readonly ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue exclusive)> _exchanges = 
             new ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue exclusive)>();
+
+        private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
 
         private bool _isRunning;
 
@@ -54,6 +57,7 @@ namespace RDS.CaraBus.InMemory
                 }
 
                 _subscribeActions = new ConcurrentBag<Action>();
+                _typesCache.Clear();
 
                 _isRunning = false;
             }
@@ -68,12 +72,15 @@ namespace RDS.CaraBus.InMemory
 
             options = options ?? _defaultPublishOptions;
 
-            var messageType = message.GetType();
+            var types = _typesCache
+                .GetOrAdd(
+                    message.GetType(), 
+                    (mt) => mt
+                        .InheritanceChain()
+                        .Union(mt.GetTypeInfo().GetInterfaces())
+                        .Where(t => _exchanges.ContainsKey((options.Scope, t))));
 
-            foreach (var type in messageType
-                .InheritanceChain()
-                .Union(messageType.GetTypeInfo().GetInterfaces())
-                .Where(t => _exchanges.ContainsKey((options.Scope, t))))
+            foreach (var type in types)
             {
                 _exchanges[(options.Scope, type)].nonExclusive.Enqueue(message);
                 _exchanges[(options.Scope, type)].exclusive.Enqueue(message);
