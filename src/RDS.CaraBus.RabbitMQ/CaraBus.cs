@@ -141,26 +141,20 @@ namespace RDS.CaraBus.RabbitMQ
                     semaphore.Wait();
                     try
                     {
-                        Received(channel, handler, ea);
+                        var bodyString = Encoding.UTF8.GetString(ea.Body);
+                        var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
+                        var message = JsonConvert.DeserializeObject(envelope.Data, envelope.InheritanceChain.Last());
+
+                        handler.Invoke((T)message);
                     }
                     finally
                     {
+                        channel.BasicAck(ea.DeliveryTag, false);
                         semaphore.Release();
                     }
                 });
             };
             channel.BasicConsume(queueName, false, consumer);
-        }
-
-        private static void Received<T>(IModel channel, Action<T> handler, BasicDeliverEventArgs ea) where T : class
-        {
-            var bodyString = Encoding.UTF8.GetString(ea.Body);
-            var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
-            var message = JsonConvert.DeserializeObject(envelope.Data, envelope.InheritanceChain.Last());
-
-            handler((T)message);
-
-            channel.BasicAck(ea.DeliveryTag, false);
         }
 
         public void Dispose()
