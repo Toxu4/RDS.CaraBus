@@ -2,11 +2,11 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace RDS.CaraBus.Common
+namespace RDS.CaraBus
 {
-    public static class TypeExtensions
+    internal static class TypeExtensions
     {
-        public static List<Type> InheritanceChainAndInterfaces(this Type type)
+        public static List<Type> GetInheritanceChainAndInterfaces(this Type type)
         {
 
             var chain = new List<Type>();

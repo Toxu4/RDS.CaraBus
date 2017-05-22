@@ -5,7 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using RDS.CaraBus.Common;
+using RDS.CaraBus;
 
 namespace RDS.CaraBus.InMemory
 {
@@ -76,8 +76,8 @@ namespace RDS.CaraBus.InMemory
             var types = _typesCache
                 .GetOrAdd(
                     message.GetType(), 
-                    (mt) => mt 
-                        .InheritanceChainAndInterfaces()
+                    mt => mt 
+                        .GetInheritanceChainAndInterfaces()
                         .Where(t => _exchanges.ContainsKey((options.Scope, t))));
 
             foreach (var type in types)

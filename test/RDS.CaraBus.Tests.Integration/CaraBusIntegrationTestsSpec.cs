@@ -22,7 +22,10 @@ namespace RDS.CaraBus.Tests.Integration
         [TearDown]
         public void TearDown()
         {
-            _sut.Stop();
+            if (_sut.IsRunning())
+            {
+                _sut.Stop();
+            }            
         }
 
         [Test]

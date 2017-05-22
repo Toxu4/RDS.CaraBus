@@ -15,7 +15,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\RDS.CaraBus.Common\RDS.CaraBus.Common.csproj" />
     <ProjectReference Include="..\RDS.CaraBus\RDS.CaraBus.csproj"></ProjectReference>
   </ItemGroup>
 </Project>

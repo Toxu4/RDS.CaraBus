@@ -8,7 +8,7 @@ using RabbitMQ.Client.Events;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-using RDS.CaraBus.Common;
+using RDS.CaraBus;
 
 namespace RDS.CaraBus.RabbitMQ
 {
@@ -17,7 +17,7 @@ namespace RDS.CaraBus.RabbitMQ
         private readonly PublishOptions _defaultPublishOptions = new PublishOptions();
         private readonly SubscribeOptions _defaultSubscribeOptions = new SubscribeOptions();
 
-        private ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
+        private readonly ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
 
         private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
 
@@ -81,12 +81,6 @@ namespace RDS.CaraBus.RabbitMQ
             }
         }
 
-        public void CloseAndDisposeConnection()
-        {
-            _connection.Close();
-            _connection.Dispose();
-        }
-
         public Task PublishAsync<T>(T message, PublishOptions options = null) where T : class
         {
             if (!IsRunning())
@@ -100,7 +94,7 @@ namespace RDS.CaraBus.RabbitMQ
             var serializedEnvelope = JsonConvert.SerializeObject(envelope);
             var buffer = Encoding.UTF8.GetBytes(serializedEnvelope);
 
-            var types = _typesCache.GetOrAdd(message.GetType(), (mt) => mt.InheritanceChainAndInterfaces());
+            var types = _typesCache.GetOrAdd(message.GetType(), mt => mt.GetInheritanceChainAndInterfaces());
 
             foreach (var type in types)
             {
@@ -178,6 +172,15 @@ namespace RDS.CaraBus.RabbitMQ
             {
                 CloseAndDisposeConnection();
             }
+        }
+
+        public void CloseAndDisposeConnection()
+        {
+            if (_connection.IsOpen)
+            {
+                _connection.Close();
+            }
+            _connection.Dispose();
         }
     }
 }
