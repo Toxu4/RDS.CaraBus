@@ -2,13 +2,21 @@ using System;
 using System.Collections.Generic;
 using System.Reflection;
 
-namespace RDS.CaraBus.RabbitMQ
+namespace RDS.CaraBus.Common
 {
-    internal static class TypeExtensions
+    public static class TypeExtensions
     {
-        public static List<Type> InheritanceChain(this Type type)
+        public static List<Type> InheritanceChainAndInterfaces(this Type type)
         {
+
             var chain = new List<Type>();
+
+#if NET462
+            chain.AddRange(type.GetInterfaces());
+#endif
+#if NETSTANDARD1_6
+            chain.AddRange(type.GetTypeInfo().GetInterfaces());
+#endif
 
             while (true)
             {
@@ -18,7 +26,12 @@ namespace RDS.CaraBus.RabbitMQ
                 }
 
                 chain.Insert(0, type);
+#if NET462
+                type = type.BaseType;
+#endif
+#if NETSTANDARD1_6
                 type = type.GetTypeInfo().BaseType;
+#endif
             }
 
             return chain;

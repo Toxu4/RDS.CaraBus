@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using RDS.CaraBus.Tests.Unit;
+using NSubstitute;
+using RabbitMQ.Client;
 
 namespace RDS.CaraBus.RabbitMQ.Tests.Unit
 {
@@ -12,7 +14,9 @@ namespace RDS.CaraBus.RabbitMQ.Tests.Unit
 
         protected override ICaraBus CreateCaraBus()
         {
-            var caraBus = new CaraBus();
+            var connectionFactory = Substitute.For<IConnectionFactory>();
+
+            var caraBus = new CaraBus(connectionFactory);
 
             _disposables.Add(caraBus);
 

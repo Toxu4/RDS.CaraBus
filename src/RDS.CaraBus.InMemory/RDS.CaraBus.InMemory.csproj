@@ -11,10 +11,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="System.ValueTuple" Version="4.3.0" />
+    <PackageReference Include="System.ValueTuple" Version="4.3.1" />
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\RDS.CaraBus.Common\RDS.CaraBus.Common.csproj" />
     <ProjectReference Include="..\RDS.CaraBus\RDS.CaraBus.csproj"></ProjectReference>
   </ItemGroup>
 </Project>

@@ -2,9 +2,10 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
+
+using RDS.CaraBus.Common;
 
 namespace RDS.CaraBus.InMemory
 {
@@ -75,9 +76,8 @@ namespace RDS.CaraBus.InMemory
             var types = _typesCache
                 .GetOrAdd(
                     message.GetType(), 
-                    (mt) => mt
-                        .InheritanceChain()
-                        .Union(mt.GetTypeInfo().GetInterfaces())
+                    (mt) => mt 
+                        .InheritanceChainAndInterfaces()
                         .Where(t => _exchanges.ContainsKey((options.Scope, t))));
 
             foreach (var type in types)
