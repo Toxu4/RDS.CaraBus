@@ -12,7 +12,7 @@ namespace RDS.CaraBus.RabbitMQ.Tests.Integration
 
         protected override ICaraBus CreateCaraBus()
         {
-            var caraBus = new CaraBus();
+            var caraBus = new CaraBus(factory => factory.HostName = "localhost");
 
             _disposables.Add(caraBus);
 

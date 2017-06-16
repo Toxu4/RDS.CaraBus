@@ -35,6 +35,15 @@ namespace RDS.CaraBus.RabbitMQ
             _connectionFactory = connectionFactory ?? CreateDefaultConnectionFactory("localhost");
         }
 
+        public CaraBus(Action<ConnectionFactory> configureConnectionFactory)
+        {
+            var connectionFactory = CreateDefaultConnectionFactory("localhost");
+
+            configureConnectionFactory?.Invoke(connectionFactory);
+
+            _connectionFactory = connectionFactory;
+        }
+
         private static ConnectionFactory CreateDefaultConnectionFactory(string hostName)
         {
             return new ConnectionFactory
