@@ -109,9 +109,9 @@ namespace RDS.CaraBus.InMemory
 
             void SubscriberAction(object message)
             {
-                Task.Factory.StartNew(() =>
+                Task.Factory.StartNew(async () =>
                 {
-                    semaphore.Wait();
+                    await semaphore.WaitAsync();
                     try
                     {
                         handler.Invoke((T) message);

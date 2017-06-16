@@ -8,8 +8,6 @@ using RabbitMQ.Client.Events;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-using RDS.CaraBus;
-
 namespace RDS.CaraBus.RabbitMQ
 {
     public class CaraBus : ICaraBus, IDisposable
@@ -134,9 +132,9 @@ namespace RDS.CaraBus.RabbitMQ
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
-                Task.Factory.StartNew(() =>
+                Task.Factory.StartNew(async () =>
                 {
-                    semaphore.Wait();
+                    await semaphore.WaitAsync();
                     try
                     {
                         var bodyString = Encoding.UTF8.GetString(ea.Body);
