@@ -32,7 +32,17 @@ namespace RDS.CaraBus.RabbitMQ
 
         public CaraBus(IConnectionFactory connectionFactory = null)
         {
-            _connectionFactory = connectionFactory ?? new ConnectionFactory { HostName = "localhost" };
+            _connectionFactory = connectionFactory ?? CreateDefaultConnectionFactory("localhost");
+        }
+
+        private static ConnectionFactory CreateDefaultConnectionFactory(string hostName)
+        {
+            return new ConnectionFactory
+            {
+                HostName = hostName,
+                AutomaticRecoveryEnabled = true,
+                RequestedHeartbeat = 10
+            };
         }
 
         public bool IsRunning()
