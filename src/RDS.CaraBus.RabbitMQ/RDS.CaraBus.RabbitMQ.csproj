@@ -3,7 +3,7 @@
   <Import Project="..\..\build\common.props" />
   
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.6;net462</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;net461</TargetFrameworks>
     <Description>An RabbitMQ implementation of RDS.CaraBus</Description>
     <AssemblyName>RDS.CaraBus.RabbitMQ</AssemblyName>
     <PackageId>RDS.CaraBus.RabbitMQ</PackageId>

@@ -11,10 +11,10 @@ namespace RDS.CaraBus
 
             var chain = new List<Type>();
 
-#if NET462
+#if NET451
             chain.AddRange(type.GetInterfaces());
 #endif
-#if NETSTANDARD1_6
+#if NETSTANDARD1_5
             chain.AddRange(type.GetTypeInfo().GetInterfaces());
 #endif
 
@@ -26,10 +26,10 @@ namespace RDS.CaraBus
                 }
 
                 chain.Insert(0, type);
-#if NET462
+#if NET451
                 type = type.BaseType;
 #endif
-#if NETSTANDARD1_6
+#if NETSTANDARD1_5
                 type = type.GetTypeInfo().BaseType;
 #endif
             }
