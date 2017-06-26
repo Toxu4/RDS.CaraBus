@@ -174,17 +174,16 @@ namespace RDS.CaraBus.RabbitMQ
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
-                var task = new Task(async () =>
+                Task.Run(async () =>
                 {
-                    await semaphore.WaitAsync().ConfigureAwait(false); ;
-
+                    await semaphore.WaitAsync().ConfigureAwait(false);
                     try
                     {
                         var bodyString = Encoding.UTF8.GetString(ea.Body);
                         var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
                         var message = JsonConvert.DeserializeObject(envelope.Data, envelope.Type);
 
-                        await handler((T)message);
+                        await handler((T)message).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -192,14 +191,6 @@ namespace RDS.CaraBus.RabbitMQ
                         semaphore.Release();
                     }
                 });
-
-                _currentTasks.TryAdd(task.Id, task);
-                task.ContinueWith(o =>
-                {
-                    _currentTasks.TryRemove(task.Id, out Task value);
-                });
-
-                Task.Run(() => task);
             };
 
             channel.BasicConsume(queueName, false, consumer);

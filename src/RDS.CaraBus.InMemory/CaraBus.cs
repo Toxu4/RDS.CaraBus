@@ -130,27 +130,19 @@ namespace RDS.CaraBus.InMemory
 
             void SubscriberAction(object message)
             {
-                var task = new Task(async () =>
+                Task.Run(async () =>
                 {
                     await semaphore.WaitAsync().ConfigureAwait(false);
 
                     try
                     {
-                        await handler((T)message).ConfigureAwait(false); ;
+                        await handler((T)message).ConfigureAwait(false);
                     }
                     finally
                     {
                         semaphore.Release();
                     }
                 });
-
-                _currentTasks.TryAdd(task.Id, task);
-                task.ContinueWith(o =>
-                {
-                    _currentTasks.TryRemove(task.Id, out Task value);
-                });                
-
-                Task.Run(() => task);
             }
 
             var (nonExclusive, exclusive) = _exchanges.GetOrAdd((options.Scope, typeof(T)), _ => (new NonExclusiveQueue(), new ExclusiveQueue()));
