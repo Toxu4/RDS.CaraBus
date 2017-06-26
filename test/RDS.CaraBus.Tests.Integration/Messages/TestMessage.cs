@@ -3,5 +3,7 @@
     public class TestMessage : ITestMessage
     {
         public string Value { get; set; }
+
+        public int IntValue { get; set; }
     }
 }

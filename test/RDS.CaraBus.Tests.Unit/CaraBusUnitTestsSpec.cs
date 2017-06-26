@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Threading.Tasks;
 using FluentAssertions;
 using NUnit.Framework;
 using RDS.CaraBus.RabbitMQ;
@@ -97,7 +98,7 @@ namespace RDS.CaraBus.Tests.Unit
             caraBus.Start();
 
             // when
-            Action action = () => caraBus.Subscribe<Object>(o => { });
+            Action action = () => caraBus.Subscribe<Object>(o => Task.CompletedTask);
 
             // then
             action.ShouldThrow<CaraBusException>().WithMessage("Should be stopped");

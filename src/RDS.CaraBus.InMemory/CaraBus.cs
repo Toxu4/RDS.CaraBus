@@ -5,8 +5,6 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
-using RDS.CaraBus;
-
 namespace RDS.CaraBus.InMemory
 {
     public class CaraBus : ICaraBus
@@ -16,7 +14,7 @@ namespace RDS.CaraBus.InMemory
 
         private ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
 
-        private readonly ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue exclusive)> _exchanges = 
+        private readonly ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue exclusive)> _exchanges =
             new ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue exclusive)>();
 
         private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
@@ -75,8 +73,8 @@ namespace RDS.CaraBus.InMemory
 
             var types = _typesCache
                 .GetOrAdd(
-                    message.GetType(), 
-                    mt => mt 
+                    message.GetType(),
+                    mt => mt
                         .GetInheritanceChainAndInterfaces()
                         .Where(t => _exchanges.ContainsKey((options.Scope, t))));
 
@@ -89,7 +87,7 @@ namespace RDS.CaraBus.InMemory
             return Task.CompletedTask;
         }
 
-        public void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class
+        public void Subscribe<T>(Func<T, Task> handler, SubscribeOptions options = null) where T : class
         {
             if (IsRunning())
             {
@@ -99,7 +97,7 @@ namespace RDS.CaraBus.InMemory
             _subscribeActions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
         }
 
-        private void InternalSubscribe<T>(Action<T> handler, SubscribeOptions options) where T : class
+        private void InternalSubscribe<T>(Func<T, Task> handler, SubscribeOptions options) where T : class
         {
             options = options ?? _defaultSubscribeOptions;
 
@@ -114,7 +112,7 @@ namespace RDS.CaraBus.InMemory
                     await semaphore.WaitAsync();
                     try
                     {
-                        handler.Invoke((T) message);
+                        await handler((T)message);
                     }
                     finally
                     {

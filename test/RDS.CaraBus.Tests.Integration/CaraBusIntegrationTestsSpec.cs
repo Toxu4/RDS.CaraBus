@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using NSubstitute;
 using NUnit.Framework;
 using RDS.CaraBus.Tests.Integration.Messages;
 
@@ -25,7 +26,7 @@ namespace RDS.CaraBus.Tests.Integration
             if (_sut.IsRunning())
             {
                 _sut.Stop();
-            }            
+            }
         }
 
         [Test]
@@ -41,6 +42,7 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 receivedValue = m.Value;
                 delivered.Set();
+                return Task.CompletedTask;
             });
 
             _sut.Start();
@@ -67,6 +69,7 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 receivedValue = ((TestMessage)m).Value;
                 delivered.Set();
+                return Task.CompletedTask;
             });
 
             _sut.Start();
@@ -93,6 +96,7 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 receivedValue = ((TestMessageDescendant)m).Value;
                 delivered.Set();
+                return Task.CompletedTask;
             });
 
             _sut.Start();
@@ -120,12 +124,14 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 firstReceivedValue = m.Value;
                 delivered.Signal();
+                return Task.CompletedTask;
             });
 
             _sut.Subscribe<TestMessage>(m =>
             {
                 secondReceivedValue = m.Value;
                 delivered.Signal();
+                return Task.CompletedTask;
             });
 
             _sut.Start();
@@ -153,11 +159,13 @@ namespace RDS.CaraBus.Tests.Integration
             _sut.Subscribe<TestMessage>(m =>
             {
                 Interlocked.Increment(ref deliveryCount);
+                return Task.CompletedTask;
             }, options);
 
             _sut.Subscribe<TestMessage>(m =>
             {
                 Interlocked.Increment(ref deliveryCount);
+                return Task.CompletedTask;
             }, options);
 
             _sut.Start();
@@ -189,12 +197,14 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 scope1ReceivedValue = $"{scope1ReceivedValue}{m.Value}";
                 delivered.Signal();
+                return Task.CompletedTask;
             }, new SubscribeOptions { Scope = scope1Name });
 
             _sut.Subscribe<TestMessage>(m =>
             {
                 scope2ReceivedValue = $"{scope2ReceivedValue}{m.Value}";
                 delivered.Signal();
+                return Task.CompletedTask;
             }, new SubscribeOptions { Scope = scope2Name });
 
             _sut.Start();
@@ -225,6 +235,7 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 delivery.Signal();
+                return Task.CompletedTask;
             });
 
             _sut.Start();
@@ -257,6 +268,7 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 delivery.Signal();
+                return Task.CompletedTask;
             }, new SubscribeOptions { MaxConcurrentHandlers = 5 });
 
             _sut.Start();
@@ -278,6 +290,62 @@ namespace RDS.CaraBus.Tests.Integration
             // then
             Assert.That(executioTime.Seconds, Is.GreaterThanOrEqualTo(1));
             Assert.That(executioTime.Seconds, Is.LessThanOrEqualTo(3));
+        }
+
+        [Test]
+        public async Task PublishSubscribe_WhenHandlerReturnTask_ShouldWaitTillHandlerEnd()
+        {
+            // given
+            var delivery = new CountdownEvent(2);
+
+            var mockClass = Substitute.For<MockClass>();
+
+            int firstMessageValue = 1;
+            int secondMessageValue = 2;
+
+            var firstTestMessage = new TestMessage
+            {
+                IntValue = firstMessageValue
+            };
+            var secondTestMessage = new TestMessage
+            {
+                IntValue = secondMessageValue
+            };
+
+            _sut.Subscribe<TestMessage>(async m =>
+            {
+                mockClass.Test(m.IntValue);
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                mockClass.Test(m.IntValue);
+                delivery.Signal();
+            }, new SubscribeOptions { MaxConcurrentHandlers = 1 });
+
+            _sut.Start();
+
+            // when
+            await _sut.PublishAsync(firstTestMessage);
+            await _sut.PublishAsync(secondTestMessage);
+
+            delivery.Wait(TimeSpan.FromSeconds(15));
+
+            // then
+            Received.InOrder(() =>
+            {
+                // Проверяем, что перед началом обработки следующего сообщения заканчивается обработка первого
+                mockClass.Test(firstMessageValue);
+                mockClass.Test(firstMessageValue);
+
+                mockClass.Test(secondMessageValue);
+                mockClass.Test(secondMessageValue);
+            });
+        }
+
+        public class MockClass
+        {
+            public virtual void Test(int someValue)
+            {
+
+            }
         }
     }
 }

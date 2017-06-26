@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RDS.CaraBus.RabbitMQ.Sample
 {
@@ -12,7 +13,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
         }
 
         static void Main(string[] args)
-        {           
+        {
             while (true)
             {
                 Console.Clear();
@@ -60,6 +61,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Received message: {m.Text}");
+                    return Task.CompletedTask;
                 });
 
                 caraBus.Start();
@@ -90,11 +92,13 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Subscriber 1 received message: {m.Text}");
+                    return Task.CompletedTask;
                 });
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Subscriber 2 received message: {m.Text}");
+                    return Task.CompletedTask;
                 });
 
                 caraBus.Start();
@@ -122,16 +126,18 @@ namespace RDS.CaraBus.RabbitMQ.Sample
 
             using (var caraBus = new CaraBus())
             {
-                var options = new SubscribeOptions {Exclusive = true};
+                var options = new SubscribeOptions { Exclusive = true };
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Subscriber 1 received message: {m.Text}");
+                    return Task.CompletedTask;
                 }, options);
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Subscriber 2 received message: {m.Text}");
+                    return Task.CompletedTask;
                 }, options);
 
                 caraBus.Start();
@@ -163,21 +169,25 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'one'] subscriber 1: received message: {m.Text}");
+                    return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "one", Exclusive = true });
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'one'] subscriber 2: received message: {m.Text}");
+                    return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "one", Exclusive = true });
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'two'] subscriber 1: received message: {m.Text}");
+                    return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "two" });
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'two'] subscriber 2: received message: {m.Text}");
+                    return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "two" });
 
                 caraBus.Start();
@@ -185,7 +195,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
 
                 var scopeOneMessage = "Hello for scope 'one'";
                 WriteDemoText($"one {scopeOneMessage}");
-                caraBus.PublishAsync(new Message { Text = scopeOneMessage }, new PublishOptions {Scope = "one" }).GetAwaiter().GetResult();
+                caraBus.PublishAsync(new Message { Text = scopeOneMessage }, new PublishOptions { Scope = "one" }).GetAwaiter().GetResult();
                 Thread.Sleep(TimeSpan.FromSeconds(1));
 
                 var scopeTwoMessage = "Hello for scope 'two'";
@@ -203,7 +213,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     var parts = text.Split(' ');
 
                     var scope = parts[0];
-                    text = parts.Length > 1 
+                    text = parts.Length > 1
                         ? parts.Skip(1).Aggregate((c, n) => c + " " + n)
                         : String.Empty;
 
