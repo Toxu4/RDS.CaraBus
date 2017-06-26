@@ -21,11 +21,11 @@ namespace RDS.CaraBus.Tests.Integration
         }
 
         [TearDown]
-        public void TearDown()
+        public async Task TearDown()
         {
             if (_sut.IsRunning())
             {
-                _sut.Stop();
+                await _sut.StopAsync();
             }
         }
 
@@ -45,7 +45,7 @@ namespace RDS.CaraBus.Tests.Integration
                 return Task.CompletedTask;
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessage { Value = sentValue });
@@ -72,7 +72,7 @@ namespace RDS.CaraBus.Tests.Integration
                 return Task.CompletedTask;
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessage { Value = sentValue });
@@ -99,7 +99,7 @@ namespace RDS.CaraBus.Tests.Integration
                 return Task.CompletedTask;
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessageDescendant { Value = sentValue });
@@ -134,7 +134,7 @@ namespace RDS.CaraBus.Tests.Integration
                 return Task.CompletedTask;
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessage { Value = sentValue });
@@ -168,7 +168,7 @@ namespace RDS.CaraBus.Tests.Integration
                 return Task.CompletedTask;
             }, options);
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessage { Value = sentValue });
@@ -180,7 +180,7 @@ namespace RDS.CaraBus.Tests.Integration
         }
 
         [Test]
-        public void PublishSubscribe_ShouldDeliverMessagesInsideScopeOnly()
+        public async Task PublishSubscribe_ShouldDeliverMessagesInsideScopeOnly()
         {
             // given
             var scope1Name = Guid.NewGuid().ToString();
@@ -207,7 +207,7 @@ namespace RDS.CaraBus.Tests.Integration
                 return Task.CompletedTask;
             }, new SubscribeOptions { Scope = scope2Name });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             var publish1_1 = _sut.PublishAsync(new TestMessage { Value = scope1SentValue }, new PublishOptions { Scope = scope1Name });
@@ -238,7 +238,7 @@ namespace RDS.CaraBus.Tests.Integration
                 return Task.CompletedTask;
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             var sw = new Stopwatch();
@@ -271,7 +271,7 @@ namespace RDS.CaraBus.Tests.Integration
                 return Task.CompletedTask;
             }, new SubscribeOptions { MaxConcurrentHandlers = 5 });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             var sw = new Stopwatch();
@@ -300,31 +300,22 @@ namespace RDS.CaraBus.Tests.Integration
 
             var mockClass = Substitute.For<MockClass>();
 
-            int firstMessageValue = 1;
-            int secondMessageValue = 2;
-
-            var firstTestMessage = new TestMessage
-            {
-                IntValue = firstMessageValue
-            };
-            var secondTestMessage = new TestMessage
-            {
-                IntValue = secondMessageValue
-            };
+            var startValue = "start";
+            var endValue = "end";
 
             _sut.Subscribe<TestMessage>(async m =>
             {
-                mockClass.Test(m.IntValue);
+                mockClass.Test(startValue);
                 await Task.Delay(TimeSpan.FromSeconds(1));
-                mockClass.Test(m.IntValue);
+                mockClass.Test(endValue);
                 delivery.Signal();
             }, new SubscribeOptions { MaxConcurrentHandlers = 1 });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
-            await _sut.PublishAsync(firstTestMessage);
-            await _sut.PublishAsync(secondTestMessage);
+            await _sut.PublishAsync(new TestMessage());
+            await _sut.PublishAsync(new TestMessage());
 
             delivery.Wait(TimeSpan.FromSeconds(15));
 
@@ -332,17 +323,49 @@ namespace RDS.CaraBus.Tests.Integration
             Received.InOrder(() =>
             {
                 // Проверяем, что перед началом обработки следующего сообщения заканчивается обработка первого
-                mockClass.Test(firstMessageValue);
-                mockClass.Test(firstMessageValue);
+                mockClass.Test(startValue);
+                mockClass.Test(endValue);
 
-                mockClass.Test(secondMessageValue);
-                mockClass.Test(secondMessageValue);
+                mockClass.Test(startValue);
+                mockClass.Test(endValue);
             });
+        }
+
+        [TestCase(1)]
+        [TestCase(2)]
+        [TestCase(3)]
+        [TestCase(4)]
+        [TestCase(5)]
+        [TestCase(6)]
+        [TestCase(7)]
+        [TestCase(8)]
+        [TestCase(9)]
+        [TestCase(10)]
+        public async Task Stop_WhenSubscriberRunning_ShouldWaitTillHandlerEnd(int t)
+        {
+            // given
+            var notEndingHandlers = 0;
+
+            _sut.Subscribe<TestMessage>(async m =>
+            {
+                notEndingHandlers++;
+                await Task.Delay(TimeSpan.FromSeconds(10));
+                notEndingHandlers--;
+            });
+
+            await _sut.StartAsync();
+
+            // when
+            await _sut.PublishAsync(new TestMessage());            
+
+            // then
+            await _sut.StopAsync();
+            Assert.AreEqual(0, notEndingHandlers);
         }
 
         public class MockClass
         {
-            public virtual void Test(int someValue)
+            public virtual void Test(string someValue)
             {
 
             }

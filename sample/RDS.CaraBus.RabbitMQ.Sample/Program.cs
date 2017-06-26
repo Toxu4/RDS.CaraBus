@@ -64,7 +64,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     return Task.CompletedTask;
                 });
 
-                caraBus.Start();
+                caraBus.StartAsync().Wait();
 
                 while (true)
                 {
@@ -77,7 +77,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
                 }
 
-                caraBus.Stop();
+                caraBus.StopAsync().Wait();
             }
         }
 
@@ -101,7 +101,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     return Task.CompletedTask;
                 });
 
-                caraBus.Start();
+                caraBus.StartAsync().Wait();
 
                 while (true)
                 {
@@ -114,7 +114,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
                 }
 
-                caraBus.Stop();
+                caraBus.StopAsync().Wait();
             }
         }
 
@@ -140,7 +140,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     return Task.CompletedTask;
                 }, options);
 
-                caraBus.Start();
+                caraBus.StartAsync().Wait();
 
                 while (true)
                 {
@@ -153,7 +153,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
                 }
 
-                caraBus.Stop();
+                caraBus.StopAsync().Wait();
             }
         }
 
@@ -190,8 +190,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "two" });
 
-                caraBus.Start();
-
+                caraBus.StartAsync().Wait();
 
                 var scopeOneMessage = "Hello for scope 'one'";
                 WriteDemoText($"one {scopeOneMessage}");
@@ -220,7 +219,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     caraBus.PublishAsync(new Message { Text = text }, new PublishOptions { Scope = scope }).GetAwaiter().GetResult();
                 }
 
-                caraBus.Stop();
+                caraBus.StopAsync().Wait();
             }
         }
 

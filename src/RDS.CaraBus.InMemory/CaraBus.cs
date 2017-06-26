@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -19,18 +20,22 @@ namespace RDS.CaraBus.InMemory
 
         private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
 
+        private readonly ConcurrentDictionary<int, Task> _currentTasks = new ConcurrentDictionary<int, Task>();
+
         private bool _isRunning;
 
-        private readonly object _locker = new object();
+        private readonly SemaphoreSlim _runningSemaphore = new SemaphoreSlim(1);
 
         public bool IsRunning()
         {
             return _isRunning;
         }
 
-        public void Start()
+        public async Task StartAsync()
         {
-            lock (_locker)
+            await _runningSemaphore.WaitAsync();
+
+            try
             {
                 if (IsRunning())
                 {
@@ -39,26 +44,44 @@ namespace RDS.CaraBus.InMemory
 
                 foreach (var subscribeAction in _subscribeActions)
                 {
-                    subscribeAction.Invoke();
+                    subscribeAction();
                 }
 
                 _isRunning = true;
             }
+            finally
+            {
+                _runningSemaphore.Release();
+            }
         }
 
-        public void Stop()
+        public async Task StopAsync(StopOptions options = null)
         {
-            lock (_locker)
+            options = options ?? new StopOptions();
+
+            await _runningSemaphore.WaitAsync().ConfigureAwait(false);
+
+            try
             {
                 if (!IsRunning())
                 {
                     throw new CaraBusException("Already stopped");
                 }
 
+                if (options.WaitForSubscribers && !_currentTasks.IsEmpty)
+                {
+                    var task = _currentTasks.Select(t => t.Value).ToArray();
+                    await Task.WhenAny(Task.WhenAll(task), Task.Delay(options.Timeout)).ConfigureAwait(false);
+                }
+
                 _subscribeActions = new ConcurrentBag<Action>();
                 _typesCache.Clear();
 
                 _isRunning = false;
+            }
+            finally
+            {
+                _runningSemaphore.Release();
             }
         }
 
@@ -107,18 +130,27 @@ namespace RDS.CaraBus.InMemory
 
             void SubscriberAction(object message)
             {
-                Task.Factory.StartNew(async () =>
+                var task = new Task(async () =>
                 {
-                    await semaphore.WaitAsync();
+                    await semaphore.WaitAsync().ConfigureAwait(false);
+
                     try
                     {
-                        await handler((T)message);
+                        await handler((T)message).ConfigureAwait(false); ;
                     }
                     finally
                     {
                         semaphore.Release();
                     }
                 });
+
+                _currentTasks.TryAdd(task.Id, task);
+                task.ContinueWith(o =>
+                {
+                    _currentTasks.TryRemove(task.Id, out Task value);
+                });                
+
+                Task.Run(() => task);
             }
 
             var (nonExclusive, exclusive) = _exchanges.GetOrAdd((options.Scope, typeof(T)), _ => (new NonExclusiveQueue(), new ExclusiveQueue()));

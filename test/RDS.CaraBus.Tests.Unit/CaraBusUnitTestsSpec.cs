@@ -23,42 +23,41 @@ namespace RDS.CaraBus.Tests.Unit
         }
 
         [Test]
-        public void Start_ShouldMakeCaraBusRunning()
+        public async Task Start_ShouldMakeCaraBusRunning()
         {
             // given
             var caraBus = CreateCaraBus();
 
             // when
-            caraBus.Start();
+            await caraBus.StartAsync();
 
             // then
             Assert.That(caraBus.IsRunning(), Is.True);
         }
 
         [Test]
-        public void Start_ShouldThrowException_IfAlreadyStarted()
+        public async Task Start_ShouldThrowException_IfAlreadyStarted()
         {
             // given
             var caraBus = CreateCaraBus();
-            caraBus.Start();
+            await caraBus.StartAsync();
 
             // when
-            Action action = () => caraBus.Start();
-
+            Func<Task> action = async () => await caraBus.StartAsync(); 
 
             // then
             action.ShouldThrow<CaraBusException>().WithMessage("Already running");
         }
 
         [Test]
-        public void Stop_ShouldMakeCaraBusStopped()
+        public async Task Stop_ShouldMakeCaraBusStopped()
         {
             // given
             var caraBus = CreateCaraBus();
-            caraBus.Start();
+            await caraBus.StartAsync();
 
             // when
-            caraBus.Stop();
+            await caraBus.StopAsync();
 
             // then
             Assert.That(caraBus.IsRunning(), Is.False);
@@ -71,7 +70,7 @@ namespace RDS.CaraBus.Tests.Unit
             var caraBus = CreateCaraBus();
 
             // when
-            Action action = () => caraBus.Stop();
+            Func<Task> action = async () => await caraBus.StopAsync();
 
             // then
             action.ShouldThrow<CaraBusException>().WithMessage("Already stopped");
@@ -91,11 +90,11 @@ namespace RDS.CaraBus.Tests.Unit
         }
 
         [Test]
-        public void Subscribe_ShouldThrowException_IfRunning()
+        public async Task Subscribe_ShouldThrowException_IfRunning()
         {
             // given
             var caraBus = CreateCaraBus();
-            caraBus.Start();
+            await caraBus.StartAsync();
 
             // when
             Action action = () => caraBus.Subscribe<Object>(o => Task.CompletedTask);
