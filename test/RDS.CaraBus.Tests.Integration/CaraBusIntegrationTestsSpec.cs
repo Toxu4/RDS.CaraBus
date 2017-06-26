@@ -331,16 +331,7 @@ namespace RDS.CaraBus.Tests.Integration
             });
         }
 
-        [TestCase(1)]
-        [TestCase(2)]
-        [TestCase(3)]
-        [TestCase(4)]
-        [TestCase(5)]
-        [TestCase(6)]
-        [TestCase(7)]
-        [TestCase(8)]
-        [TestCase(9)]
-        [TestCase(10)]
+        [Test]
         public async Task Stop_WhenSubscriberRunning_ShouldWaitTillHandlerEnd(int t)
         {
             // given
@@ -356,7 +347,7 @@ namespace RDS.CaraBus.Tests.Integration
             await _sut.StartAsync();
 
             // when
-            await _sut.PublishAsync(new TestMessage());            
+            await _sut.PublishAsync(new TestMessage());
 
             // then
             await _sut.StopAsync();
