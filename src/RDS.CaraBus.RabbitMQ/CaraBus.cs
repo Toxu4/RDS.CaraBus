@@ -174,7 +174,7 @@ namespace RDS.CaraBus.RabbitMQ
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
-                Task.Run(async () =>
+                var task = Task.Run(async () =>
                 {
                     await semaphore.WaitAsync().ConfigureAwait(false);
                     try
@@ -190,6 +190,12 @@ namespace RDS.CaraBus.RabbitMQ
                         channel.BasicAck(ea.DeliveryTag, false);
                         semaphore.Release();
                     }
+                });
+
+                _currentTasks.TryAdd(task.Id, task);
+                task.ContinueWith(o =>
+                {
+                    _currentTasks.TryRemove(task.Id, out Task value);
                 });
             };
 

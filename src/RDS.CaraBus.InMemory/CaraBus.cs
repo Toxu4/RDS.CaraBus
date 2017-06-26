@@ -15,10 +15,13 @@ namespace RDS.CaraBus.InMemory
 
         private ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
 
-        private readonly ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue exclusive)> _exchanges =
-            new ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue exclusive)>();
+        private readonly ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue
+            exclusive)> _exchanges =
+            new ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue
+                exclusive)>();
 
-        private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
+        private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache =
+            new ConcurrentDictionary<Type, IEnumerable<Type>>();
 
         private readonly ConcurrentDictionary<int, Task> _currentTasks = new ConcurrentDictionary<int, Task>();
 
@@ -130,7 +133,7 @@ namespace RDS.CaraBus.InMemory
 
             void SubscriberAction(object message)
             {
-                Task.Run(async () =>
+                var task = Task.Run(async () =>
                 {
                     await semaphore.WaitAsync().ConfigureAwait(false);
 
@@ -143,9 +146,16 @@ namespace RDS.CaraBus.InMemory
                         semaphore.Release();
                     }
                 });
+
+                _currentTasks.TryAdd(task.Id, task);
+                task.ContinueWith(o =>
+                {
+                    _currentTasks.TryRemove(task.Id, out Task value);
+                });
             }
 
-            var (nonExclusive, exclusive) = _exchanges.GetOrAdd((options.Scope, typeof(T)), _ => (new NonExclusiveQueue(), new ExclusiveQueue()));
+            var (nonExclusive, exclusive) = _exchanges.GetOrAdd((options.Scope, typeof(T)),
+                _ => (new NonExclusiveQueue(), new ExclusiveQueue()));
             if (options.Exclusive)
             {
                 exclusive.Subscribe(SubscriberAction);
