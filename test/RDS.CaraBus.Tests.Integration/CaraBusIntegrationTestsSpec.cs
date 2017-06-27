@@ -176,11 +176,11 @@ namespace RDS.CaraBus.Tests.Integration
         public async Task PublishSubscribe_ShouldDeliverMessagesInsideScopeOnly()
         {
             // given
-            var scope1Name = "scope1";
+            var scope1Name = Guid.NewGuid().ToString();
             var scope1SentValue = "[scope1value]";
             var scope1ReceivedValue = string.Empty;
 
-            var scope2Name = "scope2";
+            var scope2Name = Guid.NewGuid().ToString();
             var scope2SentValue = "[scope2value]";
             var scope2ReceivedValue = string.Empty;
 
