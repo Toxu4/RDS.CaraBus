@@ -21,8 +21,8 @@ namespace RDS.CaraBus.RabbitMQ
         private readonly ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
         private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
         private readonly ConcurrentDictionary<int, Task> _currentTasks = new ConcurrentDictionary<int, Task>();
-        private readonly ConcurrentDictionary<string, string> _messageExchanges =
-            new ConcurrentDictionary<string, string>();
+        private readonly ConcurrentDictionary<Type, string> _typeNames =
+            new ConcurrentDictionary<Type, string>();
 
         private bool _isRunning;
 
@@ -252,22 +252,27 @@ namespace RDS.CaraBus.RabbitMQ
 
         private string GetTypeName(Type type)
         {
-            if (type.IsConstructedGenericType)
-            {
-                var arguments = type.GetGenericArguments().Select(a => a.Name);
-                var formattedArguments = string.Join(", ", arguments);
+            return _typeNames.GetOrAdd(type, GetTypeNameInternal);
 
-                var namespacePrefix = string.Empty;
-                if (type.DeclaringType != null)
+            string GetTypeNameInternal(Type internalType)
+            {
+                if (type.IsConstructedGenericType)
                 {
-                    namespacePrefix = $"{type.DeclaringType.Name}";
-                }
+                    var arguments = type.GetGenericArguments().Select(a => a.Name);
+                    var formattedArguments = string.Join(", ", arguments);
 
-                return $"{namespacePrefix}+{type.Name}[{formattedArguments}]|{GetHash(type)}";
-            }
-            else
-            {
-                return $"{type.Name}|{GetHash(type)}";
+                    var namespacePrefix = string.Empty;
+                    if (type.DeclaringType != null)
+                    {
+                        namespacePrefix = $"{type.DeclaringType.Name}";
+                    }
+
+                    return $"{namespacePrefix}+{type.Name}[{formattedArguments}]|{GetHash(type)}";
+                }
+                else
+                {
+                    return $"{type.Name}|{GetHash(type)}";
+                }
             }
         }
 
@@ -303,7 +308,7 @@ namespace RDS.CaraBus.RabbitMQ
                 exchangeName = $"{scope}|{typeName.Remove(0, lengthToRemove)}";
             }
 
-            return _messageExchanges.GetOrAdd($"{type.AssemblyQualifiedName}:{scope}", exchangeName);
+            return exchangeName;
         }
 
         private string GetQueueName<T>(SubscribeOptions options)
