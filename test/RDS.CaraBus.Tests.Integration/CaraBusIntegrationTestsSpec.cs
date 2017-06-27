@@ -2,6 +2,7 @@
 using System.Diagnostics;
 using System.Threading;
 using System.Threading.Tasks;
+using NSubstitute;
 using NUnit.Framework;
 using RDS.CaraBus.Tests.Integration.Messages;
 
@@ -20,12 +21,12 @@ namespace RDS.CaraBus.Tests.Integration
         }
 
         [TearDown]
-        public void TearDown()
+        public async Task TearDown()
         {
             if (_sut.IsRunning())
             {
-                _sut.Stop();
-            }            
+                await _sut.StopAsync();
+            }
         }
 
         [Test]
@@ -43,7 +44,7 @@ namespace RDS.CaraBus.Tests.Integration
                 delivered.Set();
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessage { Value = sentValue });
@@ -69,7 +70,7 @@ namespace RDS.CaraBus.Tests.Integration
                 delivered.Set();
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessage { Value = sentValue });
@@ -95,7 +96,7 @@ namespace RDS.CaraBus.Tests.Integration
                 delivered.Set();
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessageDescendant { Value = sentValue });
@@ -128,7 +129,7 @@ namespace RDS.CaraBus.Tests.Integration
                 delivered.Signal();
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessage { Value = sentValue });
@@ -160,7 +161,7 @@ namespace RDS.CaraBus.Tests.Integration
                 Interlocked.Increment(ref deliveryCount);
             }, options);
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             await _sut.PublishAsync(new TestMessage { Value = sentValue });
@@ -172,7 +173,7 @@ namespace RDS.CaraBus.Tests.Integration
         }
 
         [Test]
-        public void PublishSubscribe_ShouldDeliverMessagesInsideScopeOnly()
+        public async Task PublishSubscribe_ShouldDeliverMessagesInsideScopeOnly()
         {
             // given
             var scope1Name = Guid.NewGuid().ToString();
@@ -197,7 +198,7 @@ namespace RDS.CaraBus.Tests.Integration
                 delivered.Signal();
             }, new SubscribeOptions { Scope = scope2Name });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             var publish1_1 = _sut.PublishAsync(new TestMessage { Value = scope1SentValue }, new PublishOptions { Scope = scope1Name });
@@ -227,7 +228,7 @@ namespace RDS.CaraBus.Tests.Integration
                 delivery.Signal();
             });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             var sw = new Stopwatch();
@@ -259,7 +260,7 @@ namespace RDS.CaraBus.Tests.Integration
                 delivery.Signal();
             }, new SubscribeOptions { MaxConcurrentHandlers = 5 });
 
-            _sut.Start();
+            await _sut.StartAsync();
 
             // when
             var sw = new Stopwatch();
@@ -278,6 +279,160 @@ namespace RDS.CaraBus.Tests.Integration
             // then
             Assert.That(executioTime.Seconds, Is.GreaterThanOrEqualTo(1));
             Assert.That(executioTime.Seconds, Is.LessThanOrEqualTo(3));
+        }
+
+        [Test]
+        public async Task PublishSubscribe_WhenHandlerReturnTask_ShouldWaitTillHandlerEnd()
+        {
+            // given
+            var delivery = new CountdownEvent(2);
+
+            var mockClass = Substitute.For<MockClass>();
+
+            var startValue = "start";
+            var endValue = "end";
+
+            _sut.Subscribe<TestMessage>(async m =>
+            {
+                mockClass.Test(startValue);
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                mockClass.Test(endValue);
+                delivery.Signal();
+            }, new SubscribeOptions { MaxConcurrentHandlers = 1 });
+
+            await _sut.StartAsync();
+
+            // when
+            await _sut.PublishAsync(new TestMessage());
+            await _sut.PublishAsync(new TestMessage());
+
+            delivery.Wait(TimeSpan.FromSeconds(15));
+
+            // then
+            Received.InOrder(() =>
+            {
+                // Проверяем, что перед началом обработки следующего сообщения заканчивается обработка первого
+                mockClass.Test(startValue);
+                mockClass.Test(endValue);
+
+                mockClass.Test(startValue);
+                mockClass.Test(endValue);
+            });
+        }
+
+        [Test]
+        [Ignore("I dont know how create task without running with true async features")]
+        public async Task Stop_WhenSubscriberRunning_ShouldWaitTillHandlerEnd()
+        {
+            // given
+            var notEndingHandlers = 0;
+
+            _sut.Subscribe<TestMessage>(async m =>
+            {
+                notEndingHandlers++;
+                await Task.Delay(TimeSpan.FromSeconds(1));
+                notEndingHandlers--;
+            });
+
+            await _sut.StartAsync();
+
+            // when
+            await _sut.PublishAsync(new TestMessage());
+
+            // then
+            await _sut.StopAsync();
+            Assert.AreEqual(0, notEndingHandlers);
+        }
+
+        [Test]
+        public async Task PublishSubscribe_WhenGeneric_ShouldDeliverMessage()
+        {
+            // given           
+            var sentValue = Guid.NewGuid().ToString();
+            var receivedValue = string.Empty;
+
+            var delivered = new ManualResetEvent(false);
+
+            _sut.Subscribe<TestGenericMessage<string>>(m =>
+            {
+                receivedValue = m.Value;
+                delivered.Set();
+            });
+
+            await _sut.StartAsync();
+
+            // when
+            await _sut.PublishAsync(new TestGenericMessage<string> { Value = sentValue });
+
+            // then
+            delivered.WaitOne(TimeSpan.FromSeconds(2));
+
+            Assert.That(receivedValue, Is.EqualTo(sentValue));
+        }
+
+        [Test]
+        public async Task PublishSubscribe_WhenComplexGeneric_ShouldDeliverMessage()
+        {
+            // given           
+            var sentValue = Guid.NewGuid().ToString();
+            string receivedValue = null;
+
+            var delivered = new ManualResetEvent(false);
+
+            _sut.Subscribe<TestGenericMessage<TestComplexMessage>>(m =>
+            {
+                receivedValue = m.Value.Value1;
+                delivered.Set();
+            });
+
+            await _sut.StartAsync();
+
+            // when
+            await _sut.PublishAsync(
+                new TestGenericMessage<TestComplexMessage> {Value = new TestComplexMessage(sentValue) });
+
+            // then
+            delivered.WaitOne(TimeSpan.FromSeconds(2));
+
+            Assert.That(receivedValue, Is.EqualTo(sentValue));
+        }
+
+        public class MockClass
+        {
+            public virtual void Test(string someValue)
+            {
+
+            }
+        }
+
+        private class TestGenericMessage<T>
+        {
+            public TestGenericMessage()
+            {
+                
+            }
+
+            public TestGenericMessage(T value)
+            {
+                Value = value;
+            }
+
+            public T Value { get; set; }
+        }
+
+        private class TestComplexMessage
+        {
+            public TestComplexMessage()
+            {
+                
+            }
+
+            public TestComplexMessage(string value1)
+            {
+                Value1 = value1;
+            }
+
+            public string Value1 { get; set; }
         }
     }
 }

@@ -7,10 +7,11 @@ namespace RDS.CaraBus
     {
         bool IsRunning();
 
-        void Start();
-        void Stop();
+        Task StartAsync();
+        Task StopAsync(StopOptions options = null);
 
         Task PublishAsync<T>(T message, PublishOptions options = null) where T : class;
+        void Subscribe<T>(Func<T, Task> handler, SubscribeOptions options = null) where T : class;
         void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class;
     }
 }

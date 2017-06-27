@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 namespace RDS.CaraBus.RabbitMQ.Sample
 {
@@ -12,7 +13,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
         }
 
         static void Main(string[] args)
-        {           
+        {
             while (true)
             {
                 Console.Clear();
@@ -62,7 +63,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     Console.WriteLine($"Received message: {m.Text}");
                 });
 
-                caraBus.Start();
+                caraBus.StartAsync().Wait();
 
                 while (true)
                 {
@@ -75,7 +76,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
                 }
 
-                caraBus.Stop();
+                caraBus.StopAsync().Wait();
             }
         }
 
@@ -97,7 +98,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     Console.WriteLine($"Subscriber 2 received message: {m.Text}");
                 });
 
-                caraBus.Start();
+                caraBus.StartAsync().Wait();
 
                 while (true)
                 {
@@ -110,7 +111,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
                 }
 
-                caraBus.Stop();
+                caraBus.StopAsync().Wait();
             }
         }
 
@@ -122,7 +123,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
 
             using (var caraBus = new CaraBus())
             {
-                var options = new SubscribeOptions {Exclusive = true};
+                var options = new SubscribeOptions { Exclusive = true };
 
                 caraBus.Subscribe<Message>(m =>
                 {
@@ -134,7 +135,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     Console.WriteLine($"Subscriber 2 received message: {m.Text}");
                 }, options);
 
-                caraBus.Start();
+                caraBus.StartAsync().Wait();
 
                 while (true)
                 {
@@ -147,7 +148,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
                 }
 
-                caraBus.Stop();
+                caraBus.StopAsync().Wait();
             }
         }
 
@@ -180,12 +181,11 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     Console.WriteLine($"[scope 'two'] subscriber 2: received message: {m.Text}");
                 }, new SubscribeOptions { Scope = "two" });
 
-                caraBus.Start();
-
+                caraBus.StartAsync().Wait();
 
                 var scopeOneMessage = "Hello for scope 'one'";
                 WriteDemoText($"one {scopeOneMessage}");
-                caraBus.PublishAsync(new Message { Text = scopeOneMessage }, new PublishOptions {Scope = "one" }).GetAwaiter().GetResult();
+                caraBus.PublishAsync(new Message { Text = scopeOneMessage }, new PublishOptions { Scope = "one" }).GetAwaiter().GetResult();
                 Thread.Sleep(TimeSpan.FromSeconds(1));
 
                 var scopeTwoMessage = "Hello for scope 'two'";
@@ -203,14 +203,14 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     var parts = text.Split(' ');
 
                     var scope = parts[0];
-                    text = parts.Length > 1 
+                    text = parts.Length > 1
                         ? parts.Skip(1).Aggregate((c, n) => c + " " + n)
                         : String.Empty;
 
                     caraBus.PublishAsync(new Message { Text = text }, new PublishOptions { Scope = scope }).GetAwaiter().GetResult();
                 }
 
-                caraBus.Stop();
+                caraBus.StopAsync().Wait();
             }
         }
 
