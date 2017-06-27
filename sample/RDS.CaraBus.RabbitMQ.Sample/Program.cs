@@ -61,7 +61,6 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Received message: {m.Text}");
-                    return Task.CompletedTask;
                 });
 
                 caraBus.StartAsync().Wait();
@@ -92,13 +91,11 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Subscriber 1 received message: {m.Text}");
-                    return Task.CompletedTask;
                 });
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Subscriber 2 received message: {m.Text}");
-                    return Task.CompletedTask;
                 });
 
                 caraBus.StartAsync().Wait();
@@ -131,13 +128,11 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Subscriber 1 received message: {m.Text}");
-                    return Task.CompletedTask;
                 }, options);
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"Subscriber 2 received message: {m.Text}");
-                    return Task.CompletedTask;
                 }, options);
 
                 caraBus.StartAsync().Wait();
@@ -169,25 +164,21 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'one'] subscriber 1: received message: {m.Text}");
-                    return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "one", Exclusive = true });
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'one'] subscriber 2: received message: {m.Text}");
-                    return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "one", Exclusive = true });
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'two'] subscriber 1: received message: {m.Text}");
-                    return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "two" });
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'two'] subscriber 2: received message: {m.Text}");
-                    return Task.CompletedTask;
                 }, new SubscribeOptions { Scope = "two" });
 
                 caraBus.StartAsync().Wait();

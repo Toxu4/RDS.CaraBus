@@ -123,6 +123,22 @@ namespace RDS.CaraBus.InMemory
             _subscribeActions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
         }
 
+        public void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class
+        {
+            if (IsRunning())
+            {
+                throw new CaraBusException("Should be stopped");
+            }
+
+            Task FakeTask(T m)
+            {
+                handler(m);
+                return Task.CompletedTask;
+            }
+
+            _subscribeActions.Add(() => InternalSubscribe((Func<T, Task>)FakeTask, options ?? _defaultSubscribeOptions));
+        }
+
         private void InternalSubscribe<T>(Func<T, Task> handler, SubscribeOptions options) where T : class
         {
             options = options ?? _defaultSubscribeOptions;

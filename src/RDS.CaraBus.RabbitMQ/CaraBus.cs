@@ -8,6 +8,8 @@ using RabbitMQ.Client.Events;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
+using System.Security.Cryptography;
 
 namespace RDS.CaraBus.RabbitMQ
 {
@@ -17,10 +19,10 @@ namespace RDS.CaraBus.RabbitMQ
         private readonly SubscribeOptions _defaultSubscribeOptions = new SubscribeOptions();
 
         private readonly ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
-
         private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
-
         private readonly ConcurrentDictionary<int, Task> _currentTasks = new ConcurrentDictionary<int, Task>();
+        private readonly ConcurrentDictionary<string, string> _messageExchanges =
+            new ConcurrentDictionary<string, string>();
 
         private bool _isRunning;
 
@@ -137,7 +139,7 @@ namespace RDS.CaraBus.RabbitMQ
 
             foreach (var type in types)
             {
-                var exchangeName = $"{options.Scope}|{type.FullName}";
+                var exchangeName = GetExchangeName(options.Scope, type);
                 _publishChannel.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
                 _publishChannel.QueueBind(DefaultQueueName, exchangeName, string.Empty);
                 _publishChannel.BasicPublish(exchangeName, "", null, buffer);
@@ -156,10 +158,27 @@ namespace RDS.CaraBus.RabbitMQ
             _subscribeActions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
         }
 
+        public void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class
+        {
+            if (IsRunning())
+            {
+                throw new CaraBusException("Should be stopped");
+            }
+
+            Task FakeTask(T m)
+            {
+                handler(m);
+                return Task.CompletedTask;
+            }
+
+            _subscribeActions.Add(() => InternalSubscribe((Func<T, Task>)FakeTask, options ?? _defaultSubscribeOptions));
+        }
+
         private void InternalSubscribe<T>(Func<T, Task> handler, SubscribeOptions options) where T : class
         {
-            var exchangeName = $"{options.Scope}|{typeof(T).FullName}";
-            var queueName = $"{options.Scope}|{typeof(T).FullName}|{ (options.Exclusive ? "Exclusive" : Guid.NewGuid().ToString()) }";
+            var exchangeName = GetExchangeName(options.Scope, typeof(T));
+            var queueName = GetQueueName<T>(options);
+
             var maxConcurrentHandlers = options.MaxConcurrentHandlers > 0 ? options.MaxConcurrentHandlers : (ushort)1;
 
             var channel = _connection.CreateModel();
@@ -229,6 +248,81 @@ namespace RDS.CaraBus.RabbitMQ
             }
 
             _connection.Dispose();
+        }
+
+        private string GetTypeName(Type type)
+        {
+            if (type.IsConstructedGenericType)
+            {
+                var arguments = type.GetGenericArguments().Select(a => a.Name);
+                var formattedArguments = string.Join(", ", arguments);
+
+                var namespacePrefix = string.Empty;
+                if (type.DeclaringType != null)
+                {
+                    namespacePrefix = $"{type.DeclaringType.Name}";
+                }
+
+                return $"{namespacePrefix}+{type.Name}[{formattedArguments}]|{GetHash(type)}";
+            }
+            else
+            {
+                return $"{type.Name}|{GetHash(type)}";
+            }
+        }
+
+        private string GetHash(Type type)
+        {
+            using (var algorithm = SHA256.Create())
+            {
+                var hash = algorithm.ComputeHash(Encoding.ASCII.GetBytes(type.AssemblyQualifiedName));
+
+                string hashString = string.Empty;
+                foreach (byte x in hash)
+                {
+                    hashString += String.Format("{0:x2}", x);
+                }
+
+                return hashString;
+            }
+        }
+
+
+        private string GetExchangeName(string scope, Type type)
+        {
+            const int maxExchangeNameLength = 255;
+
+            var typeName = GetTypeName(type);
+
+            var exchangeName = $"{scope}|{typeName}";
+
+            if (exchangeName.Length > maxExchangeNameLength)
+            {
+                var extraQueueNameLength = exchangeName.Length - maxExchangeNameLength;
+                var lengthToRemove = extraQueueNameLength <= typeName.Length ? extraQueueNameLength : typeName.Length;
+                exchangeName = $"{scope}|{typeName.Remove(0, lengthToRemove)}";
+            }
+
+            return _messageExchanges.GetOrAdd($"{type.AssemblyQualifiedName}:{scope}", exchangeName);
+        }
+
+        private string GetQueueName<T>(SubscribeOptions options)
+        {
+            const int maxQueueNameLength = 255;
+
+            var typeName = GetTypeName(typeof(T));
+            var typePostfix = options.Exclusive ? "Exclusive" : Guid.NewGuid().ToString();
+
+            var queueName = $"{options.Scope}|{typeName}|{typePostfix}";
+
+            if (queueName.Length > maxQueueNameLength)
+            {
+                var extraQueueNameLength = queueName.Length - maxQueueNameLength;
+                var lengthToRemove = extraQueueNameLength <= typeName.Length ? extraQueueNameLength : typeName.Length;
+                return $"{options.Scope}|{typeName.Remove(0, lengthToRemove)}|{typePostfix}";
+            }
+
+            return queueName;
         }
     }
 }

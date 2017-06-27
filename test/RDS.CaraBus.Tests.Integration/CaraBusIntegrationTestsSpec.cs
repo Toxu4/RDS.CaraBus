@@ -42,7 +42,6 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 receivedValue = m.Value;
                 delivered.Set();
-                return Task.CompletedTask;
             });
 
             await _sut.StartAsync();
@@ -69,7 +68,6 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 receivedValue = ((TestMessage)m).Value;
                 delivered.Set();
-                return Task.CompletedTask;
             });
 
             await _sut.StartAsync();
@@ -96,7 +94,6 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 receivedValue = ((TestMessageDescendant)m).Value;
                 delivered.Set();
-                return Task.CompletedTask;
             });
 
             await _sut.StartAsync();
@@ -124,14 +121,12 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 firstReceivedValue = m.Value;
                 delivered.Signal();
-                return Task.CompletedTask;
             });
 
             _sut.Subscribe<TestMessage>(m =>
             {
                 secondReceivedValue = m.Value;
                 delivered.Signal();
-                return Task.CompletedTask;
             });
 
             await _sut.StartAsync();
@@ -159,13 +154,11 @@ namespace RDS.CaraBus.Tests.Integration
             _sut.Subscribe<TestMessage>(m =>
             {
                 Interlocked.Increment(ref deliveryCount);
-                return Task.CompletedTask;
             }, options);
 
             _sut.Subscribe<TestMessage>(m =>
             {
                 Interlocked.Increment(ref deliveryCount);
-                return Task.CompletedTask;
             }, options);
 
             await _sut.StartAsync();
@@ -183,11 +176,11 @@ namespace RDS.CaraBus.Tests.Integration
         public async Task PublishSubscribe_ShouldDeliverMessagesInsideScopeOnly()
         {
             // given
-            var scope1Name = Guid.NewGuid().ToString();
+            var scope1Name = "scope1";
             var scope1SentValue = "[scope1value]";
             var scope1ReceivedValue = string.Empty;
 
-            var scope2Name = Guid.NewGuid().ToString();
+            var scope2Name = "scope2";
             var scope2SentValue = "[scope2value]";
             var scope2ReceivedValue = string.Empty;
 
@@ -197,14 +190,12 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 scope1ReceivedValue = $"{scope1ReceivedValue}{m.Value}";
                 delivered.Signal();
-                return Task.CompletedTask;
             }, new SubscribeOptions { Scope = scope1Name });
 
             _sut.Subscribe<TestMessage>(m =>
             {
                 scope2ReceivedValue = $"{scope2ReceivedValue}{m.Value}";
                 delivered.Signal();
-                return Task.CompletedTask;
             }, new SubscribeOptions { Scope = scope2Name });
 
             await _sut.StartAsync();
@@ -235,7 +226,6 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 delivery.Signal();
-                return Task.CompletedTask;
             });
 
             await _sut.StartAsync();
@@ -268,7 +258,6 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 delivery.Signal();
-                return Task.CompletedTask;
             }, new SubscribeOptions { MaxConcurrentHandlers = 5 });
 
             await _sut.StartAsync();
@@ -355,12 +344,95 @@ namespace RDS.CaraBus.Tests.Integration
             Assert.AreEqual(0, notEndingHandlers);
         }
 
+        [Test]
+        public async Task PublishSubscribe_WhenGeneric_ShouldDeliverMessage()
+        {
+            // given           
+            var sentValue = Guid.NewGuid().ToString();
+            var receivedValue = string.Empty;
+
+            var delivered = new ManualResetEvent(false);
+
+            _sut.Subscribe<TestGenericMessage<string>>(m =>
+            {
+                receivedValue = m.Value;
+                delivered.Set();
+            });
+
+            await _sut.StartAsync();
+
+            // when
+            await _sut.PublishAsync(new TestGenericMessage<string> { Value = sentValue });
+
+            // then
+            delivered.WaitOne(TimeSpan.FromSeconds(2));
+
+            Assert.That(receivedValue, Is.EqualTo(sentValue));
+        }
+
+        [Test]
+        public async Task PublishSubscribe_WhenComplexGeneric_ShouldDeliverMessage()
+        {
+            // given           
+            var sentValue = Guid.NewGuid().ToString();
+            string receivedValue = null;
+
+            var delivered = new ManualResetEvent(false);
+
+            _sut.Subscribe<TestGenericMessage<TestComplexMessage>>(m =>
+            {
+                receivedValue = m.Value.Value1;
+                delivered.Set();
+            });
+
+            await _sut.StartAsync();
+
+            // when
+            await _sut.PublishAsync(
+                new TestGenericMessage<TestComplexMessage> {Value = new TestComplexMessage(sentValue) });
+
+            // then
+            delivered.WaitOne(TimeSpan.FromSeconds(2));
+
+            Assert.That(receivedValue, Is.EqualTo(sentValue));
+        }
+
         public class MockClass
         {
             public virtual void Test(string someValue)
             {
 
             }
+        }
+
+        private class TestGenericMessage<T>
+        {
+            public TestGenericMessage()
+            {
+                
+            }
+
+            public TestGenericMessage(T value)
+            {
+                Value = value;
+            }
+
+            public T Value { get; set; }
+        }
+
+        private class TestComplexMessage
+        {
+            public TestComplexMessage()
+            {
+                
+            }
+
+            public TestComplexMessage(string value1)
+            {
+                Value1 = value1;
+            }
+
+            public string Value1 { get; set; }
         }
     }
 }
