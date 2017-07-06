@@ -185,7 +185,7 @@ namespace RDS.CaraBus.RabbitMQ
 
             channel.BasicQos(0, maxConcurrentHandlers, true);
             channel.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
-            channel.QueueDeclare(queueName, durable: true, exclusive: false);
+            channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: !options.Exclusive);
             channel.QueueBind(queueName, exchangeName, string.Empty);
 
             var semaphore = new SemaphoreSlim(maxConcurrentHandlers);
