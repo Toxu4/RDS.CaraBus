@@ -206,8 +206,14 @@ namespace RDS.CaraBus.RabbitMQ
                     }
                     finally
                     {
-                        channel.BasicAck(ea.DeliveryTag, false);
-                        semaphore.Release();
+                        try
+                        {
+                            channel.BasicAck(ea.DeliveryTag, false);
+                        }
+                        finally 
+                        {
+                            semaphore.Release();
+                        }
                     }
                 });
 
