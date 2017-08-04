@@ -75,8 +75,8 @@ namespace RDS.CaraBus.RabbitMQ
                 }
 
                 _connection = _connectionFactory.CreateConnection();
-                _publishChannel = _connection.CreateModel();
 
+                _publishChannel = _connection.CreateModel();
                 _publishChannel.QueueDeclare(DefaultQueueName, durable: true, exclusive: false);
                 _publishChannel.BasicConsume(DefaultQueueName, true, new EventingBasicConsumer(_publishChannel));
 
@@ -140,9 +140,12 @@ namespace RDS.CaraBus.RabbitMQ
             foreach (var type in types)
             {
                 var exchangeName = GetExchangeName(options.Scope, type);
-                _publishChannel.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
-                _publishChannel.QueueBind(DefaultQueueName, exchangeName, string.Empty);
-                _publishChannel.BasicPublish(exchangeName, "", null, buffer);
+                lock (_publishChannel)
+                {
+                    _publishChannel.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
+                    _publishChannel.QueueBind(DefaultQueueName, exchangeName, string.Empty);
+                    _publishChannel.BasicPublish(exchangeName, "", null, buffer);
+                }
             }
 
             return Task.CompletedTask;
@@ -183,19 +186,23 @@ namespace RDS.CaraBus.RabbitMQ
 
             var channel = _connection.CreateModel();
 
-            channel.BasicQos(0, maxConcurrentHandlers, true);
-            channel.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
-            channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: !options.Exclusive);
-            channel.QueueBind(queueName, exchangeName, string.Empty);
+            lock (channel)
+            {
+                channel.BasicQos(0, maxConcurrentHandlers, true);
+                channel.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
+                channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: !options.Exclusive);
+                channel.QueueBind(queueName, exchangeName, string.Empty);
+            }
 
-            var semaphore = new SemaphoreSlim(maxConcurrentHandlers);
+            var concurrencyLimiter = new SemaphoreSlim(maxConcurrentHandlers);
+            var singleAckPerChannel = new SemaphoreSlim(1);
 
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
                 var task = Task.Run(async () =>
                 {
-                    await semaphore.WaitAsync().ConfigureAwait(false);
+                    await concurrencyLimiter.WaitAsync().ConfigureAwait(false);
                     try
                     {
                         var bodyString = Encoding.UTF8.GetString(ea.Body);
@@ -208,11 +215,14 @@ namespace RDS.CaraBus.RabbitMQ
                     {
                         try
                         {
+                            await singleAckPerChannel.WaitAsync().ConfigureAwait(false);
+
                             channel.BasicAck(ea.DeliveryTag, false);
                         }
-                        finally 
+                        finally
                         {
-                            semaphore.Release();
+                            singleAckPerChannel.Release();
+                            concurrencyLimiter.Release();
                         }
                     }
                 });
@@ -220,7 +230,7 @@ namespace RDS.CaraBus.RabbitMQ
                 _currentTasks.TryAdd(task.Id, task);
                 task.ContinueWith(o =>
                 {
-                    _currentTasks.TryRemove(task.Id, out Task value);
+                    _currentTasks.TryRemove(task.Id, out _);
                 });
             };
 
