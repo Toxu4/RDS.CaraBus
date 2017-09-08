@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -115,31 +114,51 @@ namespace RDS.CaraBus.InMemory
 
         public void Subscribe<T>(Func<T, Task> handler, SubscribeOptions options = null) where T : class
         {
-            if (IsRunning())
+            async Task Handler(object m)
             {
-                throw new CaraBusException("Should be stopped");
+                await handler((T)m);
             }
 
-            _subscribeActions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
+            Subscribe(typeof(T), Handler, options);
         }
-
-        public void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class
+        public void Subscribe(Type messageType, Func<object, Task> handler, SubscribeOptions options = null)
         {
             if (IsRunning())
             {
                 throw new CaraBusException("Should be stopped");
             }
 
-            Task FakeTask(T m)
+            _subscribeActions.Add(() => InternalSubscribe(messageType, handler, options ?? _defaultSubscribeOptions));
+        }
+
+        public void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class
+        {
+            Task Handler(object m)
+            {
+                handler((T)m);
+                return Task.CompletedTask;
+            }
+
+            Subscribe(typeof(T), Handler, options);
+        }
+
+        public void Subscribe(Type messageType, Action<object> handler, SubscribeOptions options = null)
+        {
+            if (IsRunning())
+            {
+                throw new CaraBusException("Should be stopped");
+            }
+
+            Task Handler(object m)
             {
                 handler(m);
                 return Task.CompletedTask;
             }
 
-            _subscribeActions.Add(() => InternalSubscribe((Func<T, Task>)FakeTask, options ?? _defaultSubscribeOptions));
+            _subscribeActions.Add(() => InternalSubscribe(messageType, Handler, options ?? _defaultSubscribeOptions));
         }
 
-        private void InternalSubscribe<T>(Func<T, Task> handler, SubscribeOptions options) where T : class
+        private void InternalSubscribe(Type messageType, Func<object, Task> handler, SubscribeOptions options)
         {
             options = options ?? _defaultSubscribeOptions;
 
@@ -155,7 +174,7 @@ namespace RDS.CaraBus.InMemory
 
                     try
                     {
-                        await handler((T)message).ConfigureAwait(false);
+                        await handler(message).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -170,7 +189,7 @@ namespace RDS.CaraBus.InMemory
                 });
             }
 
-            var (nonExclusive, exclusive) = _exchanges.GetOrAdd((options.Scope, typeof(T)),
+            var (nonExclusive, exclusive) = _exchanges.GetOrAdd((options.Scope, messageType),
                 _ => (new NonExclusiveQueue(), new ExclusiveQueue()));
             if (options.Exclusive)
             {

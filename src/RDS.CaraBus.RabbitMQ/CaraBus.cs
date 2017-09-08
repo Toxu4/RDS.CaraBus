@@ -153,34 +153,55 @@ namespace RDS.CaraBus.RabbitMQ
 
         public void Subscribe<T>(Func<T, Task> handler, SubscribeOptions options = null) where T : class
         {
-            if (IsRunning())
+            async Task Handler(object o)
             {
-                throw new CaraBusException("Should be stopped");
+                await handler((T)o);
             }
 
-            _subscribeActions.Add(() => InternalSubscribe(handler, options ?? _defaultSubscribeOptions));
+            Subscribe(typeof(T), Handler, options);
         }
 
         public void Subscribe<T>(Action<T> handler, SubscribeOptions options = null) where T : class
+        {
+            Task Handler(object o)
+            {
+                handler((T) o);
+                return Task.CompletedTask;
+            }
+
+            Subscribe(typeof(T), Handler, options);
+        }
+
+        public void Subscribe(Type messageType, Func<object, Task> handler, SubscribeOptions options = null)
         {
             if (IsRunning())
             {
                 throw new CaraBusException("Should be stopped");
             }
 
-            Task FakeTask(T m)
+            _subscribeActions.Add(() => InternalSubscribe(messageType, handler, options ?? _defaultSubscribeOptions));
+        }
+
+        public void Subscribe(Type messageType, Action<object> handler, SubscribeOptions options = null)
+        {
+            if (IsRunning())
+            {
+                throw new CaraBusException("Should be stopped");
+            }
+
+            Task FakeTask(object m)
             {
                 handler(m);
                 return Task.CompletedTask;
             }
 
-            _subscribeActions.Add(() => InternalSubscribe((Func<T, Task>)FakeTask, options ?? _defaultSubscribeOptions));
+            _subscribeActions.Add(() => InternalSubscribe(messageType, FakeTask, options ?? _defaultSubscribeOptions));
         }
 
-        private void InternalSubscribe<T>(Func<T, Task> handler, SubscribeOptions options) where T : class
+        private void InternalSubscribe(Type messageType, Func<object, Task> handler, SubscribeOptions options)
         {
-            var exchangeName = GetExchangeName(options.Scope, typeof(T));
-            var queueName = GetQueueName<T>(options);
+            var exchangeName = GetExchangeName(options.Scope, messageType);
+            var queueName = GetQueueName(messageType, options);
 
             var maxConcurrentHandlers = options.MaxConcurrentHandlers > 0 ? options.MaxConcurrentHandlers : (ushort)1;
 
@@ -209,7 +230,7 @@ namespace RDS.CaraBus.RabbitMQ
                         var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
                         var message = JsonConvert.DeserializeObject(envelope.Data, envelope.Type);
 
-                        await handler((T)message).ConfigureAwait(false);
+                        await handler(message).ConfigureAwait(false);
                     }
                     finally
                     {
@@ -327,11 +348,11 @@ namespace RDS.CaraBus.RabbitMQ
             return exchangeName;
         }
 
-        private string GetQueueName<T>(SubscribeOptions options)
+        private string GetQueueName(Type messageType, SubscribeOptions options)
         {
             const int maxQueueNameLength = 255;
 
-            var typeName = GetTypeName(typeof(T));
+            var typeName = GetTypeName(messageType);
             var typePostfix = options.Exclusive ? "Exclusive" : Guid.NewGuid().ToString();
 
             var queueName = $"{options.Scope}|{typeName}|{typePostfix}";

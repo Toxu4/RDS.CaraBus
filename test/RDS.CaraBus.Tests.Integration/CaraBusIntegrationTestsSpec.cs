@@ -152,7 +152,7 @@ namespace RDS.CaraBus.Tests.Integration
             var options = new SubscribeOptions { Exclusive = true };
 
             _sut.Subscribe<TestMessage>(m =>
-            {
+            {                
                 Interlocked.Increment(ref deliveryCount);
             }, options);
 
