@@ -87,7 +87,7 @@ namespace RDS.CaraBus.InMemory
             }
         }
 
-        public Task PublishAsync<T>(T message, PublishOptions options = null) where T : class
+        public Task PublishAsync(object message, PublishOptions options = null)
         {
             if (!IsRunning())
             {
