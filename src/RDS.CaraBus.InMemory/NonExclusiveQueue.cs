@@ -12,7 +12,7 @@ namespace RDS.CaraBus.InMemory
         {
             foreach (var subscriberAction in _subscribersActions)
             {
-                Task.Factory.StartNew(() =>
+                Task.Run(() =>
                 {
                     subscriberAction.Invoke(message);
                 });

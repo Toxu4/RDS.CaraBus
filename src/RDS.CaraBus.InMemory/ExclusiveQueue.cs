@@ -23,7 +23,7 @@ namespace RDS.CaraBus.InMemory
                 _subscribersActions.Enqueue(subscriberAction);
             }
 
-            Task.Factory.StartNew(() =>
+            Task.Run(() =>
             {
                 subscriberAction.Invoke(message);
             });

@@ -14,7 +14,7 @@ namespace RDS.CaraBus.InMemory
 
         protected AbstractQueue()
         {
-            Task.Factory.StartNew(() =>
+            new Thread(() =>
             {
                 _started.Set();
 
@@ -26,7 +26,7 @@ namespace RDS.CaraBus.InMemory
                         NotifySubscribers(message);
                     }
                 }    
-            });
+            }).Start();
         }
 
         public void Enqueue(object message)
