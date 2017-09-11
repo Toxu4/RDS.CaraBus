@@ -221,9 +221,11 @@ namespace RDS.CaraBus.RabbitMQ
             var consumer = new EventingBasicConsumer(channel);
             consumer.Received += (model, ea) =>
             {
+                concurrencyLimiter.Wait();
+
                 var task = Task.Run(async () =>
                 {
-                    await concurrencyLimiter.WaitAsync().ConfigureAwait(false);
+                    
                     try
                     {
                         var bodyString = Encoding.UTF8.GetString(ea.Body);
@@ -244,7 +246,7 @@ namespace RDS.CaraBus.RabbitMQ
                         {
                             singleAckPerChannel.Release();
                             concurrencyLimiter.Release();
-                        }
+                        }                        
                     }
                 });
 
