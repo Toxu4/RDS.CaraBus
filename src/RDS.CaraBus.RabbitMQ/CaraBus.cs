@@ -317,7 +317,7 @@ namespace RDS.CaraBus.RabbitMQ
         {
             using (var algorithm = SHA256.Create())
             {
-                var hash = algorithm.ComputeHash(Encoding.ASCII.GetBytes(type.AssemblyQualifiedName));
+                var hash = algorithm.ComputeHash(Encoding.ASCII.GetBytes(type.GetTypeInfo().Assembly.GetName().Name + "|" + type.FullName));
 
                 string hashString = string.Empty;
                 foreach (byte x in hash)
