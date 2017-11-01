@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="System.Net.NameResolution" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\RDS.CaraBus.RabbitMQ\RDS.CaraBus.RabbitMQ.csproj" />
   </ItemGroup>
 
