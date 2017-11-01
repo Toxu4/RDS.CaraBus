@@ -11,6 +11,10 @@ using System.Linq;
 using System.Reflection;
 using System.Security.Cryptography;
 
+#if !NETSTANDARD1_5
+using Microsoft.Extensions.Logging;
+#endif
+
 namespace RDS.CaraBus.RabbitMQ
 {
     public class CaraBus : ICaraBus, IDisposable
@@ -28,6 +32,10 @@ namespace RDS.CaraBus.RabbitMQ
 
         private readonly IConnectionFactory _connectionFactory;
 
+#if !NETSTANDARD1_5
+        private readonly ILogger<CaraBus> _logger;
+#endif
+
         private IConnection _connection;
         private IModel _publishChannel;
 
@@ -35,10 +43,23 @@ namespace RDS.CaraBus.RabbitMQ
 
         private readonly SemaphoreSlim _runningSemaphore = new SemaphoreSlim(1);
 
-        public CaraBus(IConnectionFactory connectionFactory = null)
+        public CaraBus()
+            :this(CreateDefaultConnectionFactory("localhost"))
         {
-            _connectionFactory = connectionFactory ?? CreateDefaultConnectionFactory("localhost");
         }
+
+        public CaraBus(IConnectionFactory connectionFactory)
+        {
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+        }
+
+#if !NETSTANDARD1_5
+        public CaraBus(IConnectionFactory connectionFactory, ILogger<CaraBus> logger)
+        {
+            _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
+            _logger = logger;
+        }
+#endif
 
         public CaraBus(Action<ConnectionFactory> configureConnectionFactory)
         {
@@ -87,6 +108,13 @@ namespace RDS.CaraBus.RabbitMQ
 
                 _isRunning = true;
             }
+#if !NETSTANDARD1_5
+            catch (Exception e)
+            {
+                _logger?.LogError(e, "Cannot start");
+                throw;
+            }        
+#endif
             finally
             {
                 _runningSemaphore.Release();
@@ -116,6 +144,13 @@ namespace RDS.CaraBus.RabbitMQ
 
                 _isRunning = false;
             }
+#if !NETSTANDARD1_5
+            catch (Exception e)
+            {
+                _logger?.LogError(e, "Cannot stop");
+                throw;
+            }
+#endif
             finally
             {
                 _runningSemaphore.Release();
@@ -224,16 +259,32 @@ namespace RDS.CaraBus.RabbitMQ
                 concurrencyLimiter.Wait();
 
                 var task = Task.Run(async () =>
-                {
-                    
+                {                    
                     try
                     {
                         var bodyString = Encoding.UTF8.GetString(ea.Body);
                         var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
                         var message = JsonConvert.DeserializeObject(envelope.Data, envelope.Type);
 
-                        await handler(message).ConfigureAwait(false);
+                        try
+                        {
+                            await handler(message).ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+#if !NETSTANDARD1_5
+                            _logger?.LogError(e, $"Error while handling message: {bodyString}");
+#endif
+                            throw;
+                        }
                     }
+#if !NETSTANDARD1_5
+                    catch (Exception e)
+                    {
+                        _logger?.LogError(e, "Error while converting message for handling");
+                        throw;
+                    }
+#endif
                     finally
                     {
                         try
@@ -242,6 +293,13 @@ namespace RDS.CaraBus.RabbitMQ
 
                             channel.BasicAck(ea.DeliveryTag, false);
                         }
+#if !NETSTANDARD1_5
+                        catch (Exception e)
+                        {
+                            _logger?.LogError(e, "Error while sending Ack");
+                            throw;
+                        }
+#endif
                         finally
                         {
                             singleAckPerChannel.Release();
@@ -308,10 +366,8 @@ namespace RDS.CaraBus.RabbitMQ
 
                     return $"{namespacePrefix}+{type.Name}[{formattedArguments}]|{GetHash(type)}";
                 }
-                else
-                {
-                    return $"{type.Name}|{GetHash(type)}";
-                }
+
+                return $"{type.Name}|{GetHash(type)}";
             }
         }
 
@@ -321,10 +377,10 @@ namespace RDS.CaraBus.RabbitMQ
             {
                 var hash = algorithm.ComputeHash(Encoding.ASCII.GetBytes(type.GetTypeInfo().Assembly.GetName().Name + "|" + type.FullName));
 
-                string hashString = string.Empty;
+                var hashString = string.Empty;
                 foreach (byte x in hash)
                 {
-                    hashString += String.Format("{0:x2}", x);
+                    hashString += $"{x:x2}";
                 }
 
                 return hashString;

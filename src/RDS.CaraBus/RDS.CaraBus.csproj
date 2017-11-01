@@ -3,7 +3,7 @@
   <Import Project="..\..\build\common.props" />
 
   <PropertyGroup>
-    <TargetFrameworks>netstandard1.5;net451</TargetFrameworks>
+    <TargetFrameworks>netstandard1.5;net461</TargetFrameworks>
     <Description>Lightweight service bus for .NET</Description>
     <AssemblyName>RDS.CaraBus</AssemblyName>
     <PackageId>RDS.CaraBus</PackageId>
