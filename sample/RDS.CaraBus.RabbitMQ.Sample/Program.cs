@@ -12,7 +12,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
             public string Text { get; set; }
         }
 
-        static void Main(string[] args)
+        static async Task Main(string[] args)
         {
             while (true)
             {
@@ -35,22 +35,22 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 switch (input)
                 {
                     case "1":
-                        SinglePublisherSingleSubscriber();
+                        await SinglePublisherSingleSubscriber();
                         break;
                     case "2":
-                        SinglePublisherMultipleSubscribers();
+                        await SinglePublisherMultipleSubscribers();
                         break;
                     case "3":
-                        SinglePublisherMultipleSubscribersThatSharesQueue();
+                        await SinglePublisherMultipleSubscribersThatSharesQueue();
                         break;
                     case "4":
-                        Scopes();
+                        await Scopes();
                         break;
                 }
             }
         }
 
-        private static void SinglePublisherSingleSubscriber()
+        private static async Task SinglePublisherSingleSubscriber()
         {
             Console.Clear();
             Console.WriteLine("Single publisher and single subscriber");
@@ -63,7 +63,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     Console.WriteLine($"Received message: {m.Text}");
                 });
 
-                caraBus.StartAsync().Wait();
+                await caraBus.StartAsync();
 
                 while (true)
                 {
@@ -73,14 +73,14 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                         break;
                     }
 
-                    caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
+                    await caraBus.PublishAsync(new Message { Text = text });
                 }
 
-                caraBus.StopAsync().Wait();
+                await caraBus.StopAsync();
             }
         }
 
-        private static void SinglePublisherMultipleSubscribers()
+        private static async Task SinglePublisherMultipleSubscribers()
         {
             Console.Clear();
             Console.WriteLine("Single publisher and multiple subscribers");
@@ -98,7 +98,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     Console.WriteLine($"Subscriber 2 received message: {m.Text}");
                 });
 
-                caraBus.StartAsync().Wait();
+                await caraBus.StartAsync();
 
                 while (true)
                 {
@@ -108,14 +108,14 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                         break;
                     }
 
-                    caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
+                    await caraBus.PublishAsync(new Message { Text = text });
                 }
 
-                caraBus.StopAsync().Wait();
+                await caraBus.StopAsync();
             }
         }
 
-        private static void SinglePublisherMultipleSubscribersThatSharesQueue()
+        private static async Task SinglePublisherMultipleSubscribersThatSharesQueue()
         {
             Console.Clear();
             Console.WriteLine("Single publisher and multiple subscribers that shares one message queue");
@@ -135,7 +135,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     Console.WriteLine($"Subscriber 2 received message: {m.Text}");
                 }, options);
 
-                caraBus.StartAsync().Wait();
+                await caraBus.StartAsync();
 
                 while (true)
                 {
@@ -145,14 +145,14 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                         break;
                     }
 
-                    caraBus.PublishAsync(new Message { Text = text }).GetAwaiter().GetResult();
+                    await caraBus.PublishAsync(new Message { Text = text });
                 }
 
-                caraBus.StopAsync().Wait();
+                await caraBus.StopAsync();
             }
         }
 
-        private static void Scopes()
+        private static async Task Scopes()
         {
             Console.Clear();
             Console.WriteLine("Scopes");
@@ -163,13 +163,23 @@ namespace RDS.CaraBus.RabbitMQ.Sample
             {
                 caraBus.Subscribe<Message>(m =>
                 {
-                    Console.WriteLine($"[scope 'one'] subscriber 1: received message: {m.Text}");
+                    Console.WriteLine($"[scope 'one'], default group subscriber 1: received message: {m.Text}");
                 }, SubscribeOptions.Exclusive(opt => opt.Scope = "one"));
 
                 caraBus.Subscribe<Message>(m =>
                 {
-                    Console.WriteLine($"[scope 'one'] subscriber 2: received message: {m.Text}");
+                    Console.WriteLine($"[scope 'one'], default group subscriber 2: received message: {m.Text}");
                 }, SubscribeOptions.Exclusive(opt => opt.Scope = "one"));
+
+                caraBus.Subscribe<Message>(m =>
+                {
+                    Console.WriteLine($"[scope 'one'], custom some group, subscriber 1: received message: {m.Text}");
+                }, SubscribeOptions.Exclusive("some group", opt => opt.Scope = "one"));
+
+                caraBus.Subscribe<Message>(m =>
+                {
+                    Console.WriteLine($"[scope 'one'] custom some group, subscriber 2: received message: {m.Text}");
+                }, SubscribeOptions.Exclusive("some group", opt => opt.Scope = "one"));
 
                 caraBus.Subscribe<Message>(m =>
                 {
@@ -181,16 +191,17 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                     Console.WriteLine($"[scope 'two'] subscriber 2: received message: {m.Text}");
                 }, SubscribeOptions.NonExclusive(opt => opt.Scope = "two"));
 
-                caraBus.StartAsync().Wait();
+                await caraBus.StartAsync();
 
                 var scopeOneMessage = "Hello for scope 'one'";
                 WriteDemoText($"one {scopeOneMessage}");
-                caraBus.PublishAsync(new Message { Text = scopeOneMessage }, new PublishOptions { Scope = "one" }).GetAwaiter().GetResult();
-                Thread.Sleep(TimeSpan.FromSeconds(1));
+                await caraBus.PublishAsync(new Message { Text = scopeOneMessage }, new PublishOptions { Scope = "one" });
+
+                await Task.Delay(TimeSpan.FromSeconds(2));
 
                 var scopeTwoMessage = "Hello for scope 'two'";
                 WriteDemoText($"two {scopeTwoMessage}");
-                caraBus.PublishAsync(new Message { Text = scopeTwoMessage }, new PublishOptions { Scope = "two" }).GetAwaiter().GetResult();
+                await caraBus.PublishAsync(new Message { Text = scopeTwoMessage }, new PublishOptions { Scope = "two" });
 
                 while (true)
                 {
@@ -207,10 +218,10 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                         ? parts.Skip(1).Aggregate((c, n) => c + " " + n)
                         : String.Empty;
 
-                    caraBus.PublishAsync(new Message { Text = text }, new PublishOptions { Scope = scope }).GetAwaiter().GetResult();
+                    await caraBus.PublishAsync(new Message { Text = text }, new PublishOptions { Scope = scope });
                 }
 
-                caraBus.StopAsync().Wait();
+                await caraBus.StopAsync();
             }
         }
 
