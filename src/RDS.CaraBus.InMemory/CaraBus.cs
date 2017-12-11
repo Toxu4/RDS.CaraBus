@@ -10,17 +10,16 @@ namespace RDS.CaraBus.InMemory
     public class CaraBus : ICaraBus
     {
         private readonly PublishOptions _defaultPublishOptions = new PublishOptions();
-        private readonly SubscribeOptions _defaultSubscribeOptions = new SubscribeOptions();
+        private readonly SubscribeOptions _defaultSubscribeOptions = SubscribeOptions.NonExclusive();
 
         private ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
 
-        private readonly ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue
+        private readonly ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueueSet
             exclusive)> _exchanges =
-            new ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueue
+            new ConcurrentDictionary<(string scope, Type type), (NonExclusiveQueue nonExclusive, ExclusiveQueueSet
                 exclusive)>();
 
-        private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache =
-            new ConcurrentDictionary<Type, IEnumerable<Type>>();
+        private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
 
         private readonly ConcurrentDictionary<int, Task> _currentTasks = new ConcurrentDictionary<int, Task>();
 
@@ -189,11 +188,10 @@ namespace RDS.CaraBus.InMemory
                 });
             }
 
-            var (nonExclusive, exclusive) = _exchanges.GetOrAdd((options.Scope, messageType),
-                _ => (new NonExclusiveQueue(), new ExclusiveQueue()));
-            if (options.Exclusive)
+            var (nonExclusive, exclusive) = _exchanges.GetOrAdd((options.Scope, messageType), _ => (new NonExclusiveQueue(), new ExclusiveQueueSet()));
+            if (options.IsExclusive)
             {
-                exclusive.Subscribe(SubscriberAction);
+                exclusive.Subscribe(options.ExclusiveGroup, SubscriberAction);
             }
             else
             {
