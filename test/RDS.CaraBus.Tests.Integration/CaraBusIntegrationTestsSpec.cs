@@ -149,7 +149,7 @@ namespace RDS.CaraBus.Tests.Integration
 
             var deliveryCount = 0;
 
-            var options = new SubscribeOptions { Exclusive = true };
+            var options = SubscribeOptions.Exclusive();
 
             _sut.Subscribe<TestMessage>(m =>
             {                
@@ -190,13 +190,13 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 scope1ReceivedValue = $"{scope1ReceivedValue}{m.Value}";
                 delivered.Signal();
-            }, new SubscribeOptions { Scope = scope1Name });
+            }, SubscribeOptions.NonExclusive(opt => opt.Scope = scope1Name));
 
             _sut.Subscribe<TestMessage>(m =>
             {
                 scope2ReceivedValue = $"{scope2ReceivedValue}{m.Value}";
                 delivered.Signal();
-            }, new SubscribeOptions { Scope = scope2Name });
+            }, SubscribeOptions.NonExclusive(opt => opt.Scope = scope2Name));
 
             await _sut.StartAsync();
 
@@ -258,7 +258,7 @@ namespace RDS.CaraBus.Tests.Integration
             {
                 Thread.Sleep(TimeSpan.FromSeconds(1));
                 delivery.Signal();
-            }, new SubscribeOptions { MaxConcurrentHandlers = 5 });
+            }, SubscribeOptions.NonExclusive(opt => opt.MaxConcurrentHandlers = 5));
 
             await _sut.StartAsync();
 
@@ -298,7 +298,7 @@ namespace RDS.CaraBus.Tests.Integration
                 await Task.Delay(TimeSpan.FromSeconds(1));
                 mockClass.Test(endValue);
                 delivery.Signal();
-            }, new SubscribeOptions { MaxConcurrentHandlers = 1 });
+            }, SubscribeOptions.NonExclusive(opt => opt.MaxConcurrentHandlers = 1));
 
             await _sut.StartAsync();
 
@@ -388,13 +388,112 @@ namespace RDS.CaraBus.Tests.Integration
             await _sut.StartAsync();
 
             // when
-            await _sut.PublishAsync(
-                new TestGenericMessage<TestComplexMessage> {Value = new TestComplexMessage(sentValue) });
+            await _sut.PublishAsync(new TestGenericMessage<TestComplexMessage> {Value = new TestComplexMessage(sentValue) });
 
             // then
             delivered.WaitOne(TimeSpan.FromSeconds(2));
 
             Assert.That(receivedValue, Is.EqualTo(sentValue));
+        }
+
+        [Test]
+        public async Task PublishSubscribe_ShouldDeliverMessagesEveryGroup()
+        {
+            // given
+            var delivered = new CountdownEvent(16);
+
+            var deliveryCountGroup1_sub1 = 0;
+            var deliveryCountGroup1_sub2 = 0;
+
+            var deliveryCountGroup2_sub1 = 0;
+            var deliveryCountGroup2_sub2 = 0;
+
+            var deliveryCountGroup3_sub1 = 0;
+            var deliveryCountGroup3_sub2 = 0;
+            var deliveryCountGroup3_sub3 = 0;
+            var deliveryCountGroup3_sub4 = 0;
+
+            var deliveryCountNoGroup = 0;
+
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountGroup1_sub1);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive("GROUP 1"));
+
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountGroup1_sub2);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive("GROUP 1"));
+
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountGroup2_sub1);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive("GROUP 2"));
+
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountGroup2_sub2);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive("GROUP 2"));
+
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountGroup3_sub1);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive("GROUP 3"));
+
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountGroup3_sub2);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive("GROUP 3"));
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountGroup3_sub3);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive("GROUP 3"));
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountGroup3_sub4);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive("GROUP 3"));
+
+
+            _sut.Subscribe<TestMessage>(m =>
+            {
+                Interlocked.Increment(ref deliveryCountNoGroup);
+                delivered.Signal();
+            }, SubscribeOptions.Exclusive());
+
+
+            await _sut.StartAsync();
+
+            // when
+            var publish1_1 = _sut.PublishAsync(new TestMessage());
+            var publish1_2 = _sut.PublishAsync(new TestMessage());
+
+            var publish2_1 = _sut.PublishAsync(new TestMessage());
+            var publish2_2 = _sut.PublishAsync(new TestMessage());
+
+            Task.WaitAll(publish1_1, publish1_2, publish2_1, publish2_2);
+
+            // then
+            delivered.Wait(TimeSpan.FromSeconds(2));
+
+            Assert.That(deliveryCountGroup1_sub1, Is.EqualTo(2));
+            Assert.That(deliveryCountGroup1_sub2, Is.EqualTo(2));
+            Assert.That(deliveryCountGroup2_sub1, Is.EqualTo(2));
+            Assert.That(deliveryCountGroup2_sub2, Is.EqualTo(2));
+
+            Assert.That(deliveryCountGroup3_sub1, Is.EqualTo(1));
+            Assert.That(deliveryCountGroup3_sub2, Is.EqualTo(1));
+            Assert.That(deliveryCountGroup3_sub3, Is.EqualTo(1));
+            Assert.That(deliveryCountGroup3_sub4, Is.EqualTo(1));
+
+            Assert.That(deliveryCountNoGroup, Is.EqualTo(4));
         }
 
         public class MockClass

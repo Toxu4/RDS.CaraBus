@@ -123,7 +123,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
 
             using (var caraBus = new CaraBus())
             {
-                var options = new SubscribeOptions { Exclusive = true };
+                var options = SubscribeOptions.Exclusive();
 
                 caraBus.Subscribe<Message>(m =>
                 {
@@ -164,22 +164,22 @@ namespace RDS.CaraBus.RabbitMQ.Sample
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'one'] subscriber 1: received message: {m.Text}");
-                }, new SubscribeOptions { Scope = "one", Exclusive = true });
+                }, SubscribeOptions.Exclusive(opt => opt.Scope = "one"));
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'one'] subscriber 2: received message: {m.Text}");
-                }, new SubscribeOptions { Scope = "one", Exclusive = true });
+                }, SubscribeOptions.Exclusive(opt => opt.Scope = "one"));
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'two'] subscriber 1: received message: {m.Text}");
-                }, new SubscribeOptions { Scope = "two" });
+                }, SubscribeOptions.NonExclusive(opt => opt.Scope = "two"));
 
                 caraBus.Subscribe<Message>(m =>
                 {
                     Console.WriteLine($"[scope 'two'] subscriber 2: received message: {m.Text}");
-                }, new SubscribeOptions { Scope = "two" });
+                }, SubscribeOptions.NonExclusive(opt => opt.Scope = "two"));
 
                 caraBus.StartAsync().Wait();
 

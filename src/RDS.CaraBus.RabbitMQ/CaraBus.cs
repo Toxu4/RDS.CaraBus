@@ -20,7 +20,7 @@ namespace RDS.CaraBus.RabbitMQ
     public class CaraBus : ICaraBus, IDisposable
     {
         private readonly PublishOptions _defaultPublishOptions = new PublishOptions();
-        private readonly SubscribeOptions _defaultSubscribeOptions = new SubscribeOptions();
+        private readonly SubscribeOptions _defaultSubscribeOptions = SubscribeOptions.NonExclusive();
 
         private readonly ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
         private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
@@ -246,7 +246,7 @@ namespace RDS.CaraBus.RabbitMQ
             {
                 channel.BasicQos(0, maxConcurrentHandlers, true);
                 channel.ExchangeDeclare(exchangeName, "fanout", durable: true, autoDelete: true);
-                channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: !options.Exclusive);
+                channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: !options.IsExclusive);
                 channel.QueueBind(queueName, exchangeName, string.Empty);
             }
 
@@ -411,7 +411,7 @@ namespace RDS.CaraBus.RabbitMQ
             const int maxQueueNameLength = 255;
 
             var typeName = GetTypeName(messageType);
-            var typePostfix = options.Exclusive ? "Exclusive" : Guid.NewGuid().ToString();
+            var typePostfix = options.IsExclusive ? options.ExclusiveGroup : Guid.NewGuid().ToString();
 
             var queueName = $"{options.Scope}|{typeName}|{typePostfix}";
 
