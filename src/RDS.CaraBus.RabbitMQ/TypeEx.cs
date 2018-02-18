@@ -30,7 +30,7 @@ namespace RDS.CaraBus.RabbitMQ
                 if (Type.GetType(shortened, false) == null)
                 {
                     // if type cannot be found with shortened name - use full name
-                    shortened = full; //throw exception if null
+                    shortened = full;
                 }
 
                 _stringTypeNameLookup.TryAdd(shortened, type); //add to reverse cache
