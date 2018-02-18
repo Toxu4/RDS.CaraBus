@@ -19,14 +19,18 @@ namespace RDS.CaraBus.RabbitMQ
 {
     public class CaraBus : ICaraBus, IDisposable
     {
+        private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
+        {
+            Converters = new List<JsonConverter> { new TypeJsonConverter() }
+        };
+
         private readonly PublishOptions _defaultPublishOptions = new PublishOptions();
         private readonly SubscribeOptions _defaultSubscribeOptions = SubscribeOptions.NonExclusive();
 
         private readonly ConcurrentBag<Action> _subscribeActions = new ConcurrentBag<Action>();
         private readonly ConcurrentDictionary<Type, IEnumerable<Type>> _typesCache = new ConcurrentDictionary<Type, IEnumerable<Type>>();
         private readonly ConcurrentDictionary<int, Task> _currentTasks = new ConcurrentDictionary<int, Task>();
-        private readonly ConcurrentDictionary<Type, string> _typeNames =
-            new ConcurrentDictionary<Type, string>();
+        private readonly ConcurrentDictionary<Type, string> _typeNames = new ConcurrentDictionary<Type, string>();
 
         private bool _isRunning;
 
@@ -44,7 +48,7 @@ namespace RDS.CaraBus.RabbitMQ
         private readonly SemaphoreSlim _runningSemaphore = new SemaphoreSlim(1);
 
         public CaraBus()
-            :this(CreateDefaultConnectionFactory("localhost"))
+            : this(CreateDefaultConnectionFactory("localhost"))
         {
         }
 
@@ -113,7 +117,7 @@ namespace RDS.CaraBus.RabbitMQ
             {
                 _logger?.LogError(e, "Cannot start");
                 throw;
-            }        
+            }
 #endif
             finally
             {
@@ -167,7 +171,7 @@ namespace RDS.CaraBus.RabbitMQ
             options = options ?? _defaultPublishOptions;
 
             var envelope = new MessageEnvelope(message);
-            var serializedEnvelope = JsonConvert.SerializeObject(envelope);
+            var serializedEnvelope = JsonConvert.SerializeObject(envelope, _jsonSerializerSettings);
             var buffer = Encoding.UTF8.GetBytes(serializedEnvelope);
 
             var types = _typesCache.GetOrAdd(message.GetType(), mt => mt.GetInheritanceChainAndInterfaces());
@@ -200,7 +204,7 @@ namespace RDS.CaraBus.RabbitMQ
         {
             Task Handler(object o)
             {
-                handler((T) o);
+                handler((T)o);
                 return Task.CompletedTask;
             }
 
@@ -259,12 +263,12 @@ namespace RDS.CaraBus.RabbitMQ
                 concurrencyLimiter.Wait();
 
                 var task = Task.Run(async () =>
-                {                    
+                {
                     try
                     {
                         var bodyString = Encoding.UTF8.GetString(ea.Body);
-                        var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString);
-                        var message = JsonConvert.DeserializeObject(envelope.Data, envelope.Type);
+                        var envelope = JsonConvert.DeserializeObject<MessageEnvelope>(bodyString, _jsonSerializerSettings);
+                        var message = JsonConvert.DeserializeObject(envelope.Data, envelope.Type, _jsonSerializerSettings);
 
                         try
                         {
@@ -304,7 +308,7 @@ namespace RDS.CaraBus.RabbitMQ
                         {
                             singleAckPerChannel.Release();
                             concurrencyLimiter.Release();
-                        }                        
+                        }
                     }
                 });
 

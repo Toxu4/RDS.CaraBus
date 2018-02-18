@@ -10,7 +10,6 @@ namespace RDS.CaraBus.RabbitMQ
 
         public MessageEnvelope()
         {
-            
         }
 
         public MessageEnvelope(object data)
