@@ -21,7 +21,7 @@ namespace RDS.CaraBus.RabbitMQ
     {
         private readonly JsonSerializerSettings _jsonSerializerSettings = new JsonSerializerSettings
         {
-            Converters = new List<JsonConverter> { new TypeSerializer() }
+            Converters = new List<JsonConverter> { new TypeJsonConverter() }
         };
 
         private readonly PublishOptions _defaultPublishOptions = new PublishOptions();

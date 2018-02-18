@@ -4,32 +4,26 @@ using Newtonsoft.Json;
 
 namespace RDS.CaraBus.RabbitMQ
 {
-    public class TypeSerializer : JsonConverter
+    internal class TypeJsonConverter : JsonConverter
     {
+        private static readonly TypeInfo typeTypeInfo = typeof(Type).GetTypeInfo();
 
         public override void WriteJson(JsonWriter writer, object value, JsonSerializer serializer)
         {
-            var v = value as Type;
-            if (v == null)
+            if (value is Type type)
             {
-                return;
+                writer.WriteValue(TypeEx.GetShortAssemblyQualifiedName(type));
             }
-            writer.WriteValue(TypeEx.GetShortAssemblyQualifiedName(v));
         }
 
         public override object ReadJson(JsonReader reader, Type objectType, object existingValue, JsonSerializer serializer)
         {
-            if (objectType != typeof(Type))
-            {
-                return null;
-            }
-
-            return TypeEx.ToTypeName((string)reader.Value);
+            return objectType != typeof(Type) ? null : TypeEx.ToTypeName((string)reader.Value);
         }
 
         public override bool CanConvert(Type objectType)
         {
-            return typeof(Type).GetTypeInfo().IsAssignableFrom(objectType);
+            return typeTypeInfo.IsAssignableFrom(objectType);
         }
     }
 }

@@ -11,9 +11,9 @@ namespace RDS.CaraBus.RabbitMQ
 
         static readonly Regex SubtractFullNameRegex = new Regex(@", Version=\d+.\d+.\d+.\d+, Culture=\w+, PublicKeyToken=\w+", RegexOptions.Compiled);
 
-        private static readonly string CoreAssemblyName = GetCoreAssemblyName();
+        private static readonly string CoreAssemblyName = GetCoreRuntimeAssemblyName();
 
-        private static string GetCoreAssemblyName()
+        private static string GetCoreRuntimeAssemblyName()
         {
             var name = 1.GetType().AssemblyQualifiedName;
             var part = name.Substring(name.IndexOf(",", StringComparison.Ordinal));
