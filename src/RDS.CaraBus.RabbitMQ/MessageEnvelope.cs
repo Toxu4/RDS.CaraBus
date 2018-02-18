@@ -5,6 +5,9 @@ namespace RDS.CaraBus.RabbitMQ
 {
     internal class MessageEnvelope
     {
+        public Type Type { get; set; }
+        public string Data { get; set; }
+
         public MessageEnvelope()
         {
 
@@ -12,17 +15,8 @@ namespace RDS.CaraBus.RabbitMQ
 
         public MessageEnvelope(object data)
         {
-            TypeString = TypeEx.GetShortAssemblyQualifiedName(data.GetType());
+            Type = data.GetType();
             Data = JsonConvert.SerializeObject(data);
         }
-
-        [JsonProperty("Type")]
-        public string TypeString { get; set; }
-
-        [JsonProperty("Data")]
-        public string Data { get; set; }
-
-        [JsonIgnore]
-        public Type Type => TypeEx.ToTypeName(TypeString);
     }
 }
