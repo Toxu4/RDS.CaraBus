@@ -14,11 +14,6 @@ namespace RDS.CaraBus
 
         public string ExclusiveGroup { get; }
 
-        /// <summary>
-        /// Maximum number of concurrently working handlers
-        /// </summary>
-        public ushort MaxConcurrentHandlers { get; set; }
-
         public bool IsExclusive => ExclusiveGroup != null;
 
         public static SubscribeOptions Exclusive(Action<SubscribeOptions> configure = null)

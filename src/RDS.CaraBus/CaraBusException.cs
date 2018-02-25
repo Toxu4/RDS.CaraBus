@@ -4,10 +4,9 @@ namespace RDS.CaraBus
 {
     public class CaraBusException : Exception
     {
-        public CaraBusException(string message, Exception innerException = null)
-            :base(message, innerException)
+        public CaraBusException(string message, Exception innerException = null) : base(message, innerException)
         {
-            
+
         }
     }
 }

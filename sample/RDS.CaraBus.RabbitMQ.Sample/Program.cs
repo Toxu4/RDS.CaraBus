@@ -56,7 +56,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
             Console.WriteLine("Single publisher and single subscriber");
             Console.WriteLine("Enter message text to send or empty string to exit:");
 
-            using (var caraBus = new CaraBus())
+            using (var caraBus = new RabbitMQCaraBus(new RabbitMQCaraBusOptions()))
             {
                 caraBus.Subscribe<Message>(m =>
                 {
@@ -86,7 +86,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
             Console.WriteLine("Single publisher and multiple subscribers");
             Console.WriteLine("Enter message text to send or empty string to exit:");
 
-            using (var caraBus = new CaraBus())
+            using (var caraBus = new RabbitMQCaraBus(new RabbitMQCaraBusOptions()))
             {
                 caraBus.Subscribe<Message>(m =>
                 {
@@ -121,7 +121,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
             Console.WriteLine("Single publisher and multiple subscribers that shares one message queue");
             Console.WriteLine("Enter message text to send or empty string to exit:");
 
-            using (var caraBus = new CaraBus())
+            using (var caraBus = new RabbitMQCaraBus(new RabbitMQCaraBusOptions()))
             {
                 var options = SubscribeOptions.Exclusive();
 
@@ -159,7 +159,7 @@ namespace RDS.CaraBus.RabbitMQ.Sample
             Console.WriteLine("There are two scopes declared for this sample: 'one' and 'two'");
             Console.WriteLine("Enter '[scope]<space>message text' to send or empty string to exit:");
 
-            using (var caraBus = new CaraBus())
+            using (var caraBus = new RabbitMQCaraBus(new RabbitMQCaraBusOptions()))
             {
                 caraBus.Subscribe<Message>(m =>
                 {

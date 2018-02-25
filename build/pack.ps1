@@ -6,8 +6,7 @@ $srcPath = Join-Path $slnPath "src"
 # List of projects
 $projects = (
     "RDS.CaraBus",
-    "RDS.CaraBus.RabbitMQ",
-	"RDS.CaraBus.InMemory"
+    "RDS.CaraBus.RabbitMQ"
 )
 
 # Rebuild solution

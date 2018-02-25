@@ -1,3 +1,5 @@
+using System;
+
 namespace RDS.CaraBus
 {
     public class PublishOptions

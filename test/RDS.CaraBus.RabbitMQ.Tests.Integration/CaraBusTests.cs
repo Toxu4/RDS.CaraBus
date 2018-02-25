@@ -10,9 +10,15 @@ namespace RDS.CaraBus.RabbitMQ.Tests.Integration
     {
         private readonly List<IDisposable> _disposables = new List<IDisposable>();
 
-        protected override ICaraBus CreateCaraBus()
+        protected override ICaraBus CreateCaraBus(CaraBusBaseOptions caraBusBaseOptions)
         {
-            var caraBus = new CaraBus(factory => factory.HostName = "localhost");
+            var caraBus = new RabbitMQCaraBus(new RabbitMQCaraBusOptions
+            {
+                ConnectionString = "amqp://localhost",
+                MaxDegreeOfParallelism = caraBusBaseOptions.MaxDegreeOfParallelism,
+                AutoStart = caraBusBaseOptions.AutoStart,
+                TimeoutOnStop = caraBusBaseOptions.TimeoutOnStop
+            });
 
             _disposables.Add(caraBus);
 

@@ -10,23 +10,23 @@ namespace RDS.CaraBus.Tests.Integration
 {
     public abstract class CaraBusIntegrationTestsSpec
     {
-        protected abstract ICaraBus CreateCaraBus();
+        protected abstract ICaraBus CreateCaraBus(CaraBusBaseOptions caraBusBaseOptions);
 
         private ICaraBus _sut;
 
         [SetUp]
         public void SetUp()
         {
-            _sut = CreateCaraBus();
+            _sut = CreateCaraBus(new CaraBusBaseOptions
+            {
+                MaxDegreeOfParallelism = 1
+            });
         }
 
         [TearDown]
         public async Task TearDown()
         {
-            if (_sut.IsRunning())
-            {
-                await _sut.StopAsync();
-            }
+            await _sut.StopAsync();
         }
 
         [Test]
@@ -151,12 +151,12 @@ namespace RDS.CaraBus.Tests.Integration
 
             var options = SubscribeOptions.Exclusive();
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage3>(m =>
             {                
                 Interlocked.Increment(ref deliveryCount);
             }, options);
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage3>(m =>
             {
                 Interlocked.Increment(ref deliveryCount);
             }, options);
@@ -164,7 +164,7 @@ namespace RDS.CaraBus.Tests.Integration
             await _sut.StartAsync();
 
             // when
-            await _sut.PublishAsync(new TestMessage { Value = sentValue });
+            await _sut.PublishAsync(new TestMessage3 { Value = sentValue });
 
             // then
             Thread.Sleep(TimeSpan.FromSeconds(2));
@@ -224,7 +224,7 @@ namespace RDS.CaraBus.Tests.Integration
 
             _sut.Subscribe<TestMessage>(m =>
             {
-                Thread.Sleep(TimeSpan.FromSeconds(1));
+                Thread.Sleep(TimeSpan.FromMilliseconds(800));
                 delivery.Signal();
             });
 
@@ -239,13 +239,13 @@ namespace RDS.CaraBus.Tests.Integration
                 await _sut.PublishAsync(new TestMessage());
             }
 
-            delivery.Wait(TimeSpan.FromSeconds(10));
+            delivery.Wait(TimeSpan.FromSeconds(5));
 
             var executioTime = sw.Elapsed;
 
             // then
             Assert.That(delivery.CurrentCount, Is.EqualTo(0));
-            Assert.That(executioTime.Seconds, Is.GreaterThanOrEqualTo(5));
+            Assert.That(executioTime.Seconds, Is.GreaterThanOrEqualTo(4)); // 800 * 5 = 4 seconds
         }
 
         [Test]
@@ -254,11 +254,16 @@ namespace RDS.CaraBus.Tests.Integration
             // given
             var delivery = new CountdownEvent(10);
 
+            _sut = CreateCaraBus(new CaraBusBaseOptions
+            {
+                MaxDegreeOfParallelism = 5
+            });
+
             _sut.Subscribe<TestMessage>(m =>
             {
-                Thread.Sleep(TimeSpan.FromSeconds(1));
+                Thread.Sleep(TimeSpan.FromMilliseconds(800));
                 delivery.Signal();
-            }, SubscribeOptions.NonExclusive(opt => opt.MaxConcurrentHandlers = 5));
+            }, SubscribeOptions.NonExclusive());
 
             await _sut.StartAsync();
 
@@ -278,7 +283,7 @@ namespace RDS.CaraBus.Tests.Integration
 
             // then
             Assert.That(executioTime.Seconds, Is.GreaterThanOrEqualTo(1));
-            Assert.That(executioTime.Seconds, Is.LessThanOrEqualTo(3));
+            Assert.That(executioTime.Seconds, Is.LessThanOrEqualTo(2)); // 10 messages, 5 max parallel degree, 10/5 = 2 messages per moment, 800ms * 2 = ~1600
         }
 
         [Test]
@@ -295,10 +300,10 @@ namespace RDS.CaraBus.Tests.Integration
             _sut.Subscribe<TestMessage>(async m =>
             {
                 mockClass.Test(startValue);
-                await Task.Delay(TimeSpan.FromSeconds(1));
+                await Task.Delay(TimeSpan.FromMilliseconds(500));
                 mockClass.Test(endValue);
                 delivery.Signal();
-            }, SubscribeOptions.NonExclusive(opt => opt.MaxConcurrentHandlers = 1));
+            }, SubscribeOptions.NonExclusive());
 
             await _sut.StartAsync();
 
@@ -321,7 +326,6 @@ namespace RDS.CaraBus.Tests.Integration
         }
 
         [Test]
-        [Ignore("I dont know how create task without running with true async features")]
         public async Task Stop_WhenSubscriberRunning_ShouldWaitTillHandlerEnd()
         {
             // given
@@ -329,9 +333,9 @@ namespace RDS.CaraBus.Tests.Integration
 
             _sut.Subscribe<TestMessage>(async m =>
             {
-                notEndingHandlers++;
+                Interlocked.Increment(ref notEndingHandlers);
                 await Task.Delay(TimeSpan.FromSeconds(1));
-                notEndingHandlers--;
+                Interlocked.Decrement(ref notEndingHandlers);
             });
 
             await _sut.StartAsync();
@@ -415,54 +419,56 @@ namespace RDS.CaraBus.Tests.Integration
 
             var deliveryCountNoGroup = 0;
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountGroup1_sub1);
                 delivered.Signal();
             }, SubscribeOptions.Exclusive("GROUP 1"));
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountGroup1_sub2);
                 delivered.Signal();
             }, SubscribeOptions.Exclusive("GROUP 1"));
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountGroup2_sub1);
                 delivered.Signal();
             }, SubscribeOptions.Exclusive("GROUP 2"));
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountGroup2_sub2);
                 delivered.Signal();
             }, SubscribeOptions.Exclusive("GROUP 2"));
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountGroup3_sub1);
                 delivered.Signal();
             }, SubscribeOptions.Exclusive("GROUP 3"));
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountGroup3_sub2);
                 delivered.Signal();
             }, SubscribeOptions.Exclusive("GROUP 3"));
-            _sut.Subscribe<TestMessage>(m =>
+
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountGroup3_sub3);
                 delivered.Signal();
             }, SubscribeOptions.Exclusive("GROUP 3"));
-            _sut.Subscribe<TestMessage>(m =>
+
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountGroup3_sub4);
                 delivered.Signal();
             }, SubscribeOptions.Exclusive("GROUP 3"));
 
 
-            _sut.Subscribe<TestMessage>(m =>
+            _sut.Subscribe<TestMessage2>(m =>
             {
                 Interlocked.Increment(ref deliveryCountNoGroup);
                 delivered.Signal();
@@ -472,11 +478,11 @@ namespace RDS.CaraBus.Tests.Integration
             await _sut.StartAsync();
 
             // when
-            var publish1_1 = _sut.PublishAsync(new TestMessage());
-            var publish1_2 = _sut.PublishAsync(new TestMessage());
+            var publish1_1 = _sut.PublishAsync(new TestMessage2());
+            var publish1_2 = _sut.PublishAsync(new TestMessage2());
 
-            var publish2_1 = _sut.PublishAsync(new TestMessage());
-            var publish2_2 = _sut.PublishAsync(new TestMessage());
+            var publish2_1 = _sut.PublishAsync(new TestMessage2());
+            var publish2_2 = _sut.PublishAsync(new TestMessage2());
 
             Task.WaitAll(publish1_1, publish1_2, publish2_1, publish2_2);
 

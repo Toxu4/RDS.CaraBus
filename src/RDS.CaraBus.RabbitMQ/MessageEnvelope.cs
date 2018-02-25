@@ -12,10 +12,10 @@ namespace RDS.CaraBus.RabbitMQ
         {
         }
 
-        public MessageEnvelope(object data)
+        public MessageEnvelope(object data, JsonSerializerSettings jsonSerializerSettings)
         {
             Type = data.GetType();
-            Data = JsonConvert.SerializeObject(data);
+            Data = JsonConvert.SerializeObject(data, jsonSerializerSettings);
         }
     }
 }
