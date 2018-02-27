@@ -8,6 +8,7 @@ using RDS.CaraBus.Utility;
 
 namespace RDS.CaraBus.Tests
 {
+    [TestFixture]
     public class TaskQueueTests
     {
         [Test]
