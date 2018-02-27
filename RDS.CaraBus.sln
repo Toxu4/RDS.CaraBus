@@ -35,7 +35,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Build", "Build", "{4E7ED7BE
 		build\pack.ps1 = build\pack.ps1
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RDS.CaraBus.Tests", "RDS.CaraBus.Tests\RDS.CaraBus.Tests.csproj", "{9DE4C7D0-989E-4851-8341-AF4CB04ABF54}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "RDS.CaraBus.Tests", "test\RDS.CaraBus.Tests\RDS.CaraBus.Tests.csproj", "{C2732307-7715-4B2E-B094-1EB2B1B5CDD4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -79,10 +79,10 @@ Global
 		{8376DC50-E374-46B1-A480-FA079B6ABD3B}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{8376DC50-E374-46B1-A480-FA079B6ABD3B}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{8376DC50-E374-46B1-A480-FA079B6ABD3B}.Release|Any CPU.Build.0 = Release|Any CPU
-		{9DE4C7D0-989E-4851-8341-AF4CB04ABF54}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{9DE4C7D0-989E-4851-8341-AF4CB04ABF54}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{9DE4C7D0-989E-4851-8341-AF4CB04ABF54}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{9DE4C7D0-989E-4851-8341-AF4CB04ABF54}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C2732307-7715-4B2E-B094-1EB2B1B5CDD4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C2732307-7715-4B2E-B094-1EB2B1B5CDD4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C2732307-7715-4B2E-B094-1EB2B1B5CDD4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C2732307-7715-4B2E-B094-1EB2B1B5CDD4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

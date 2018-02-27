@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\src\RDS.CaraBus\RDS.CaraBus.csproj" />
+      <ProjectReference Include="..\..\src\RDS.CaraBus\RDS.CaraBus.csproj" />
     </ItemGroup>
 
 
