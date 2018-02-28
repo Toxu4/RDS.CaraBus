@@ -156,6 +156,7 @@ namespace RDS.CaraBus.RabbitMQ
                 }
             }
         }
+
         public override void Dispose()
         {
             base.Dispose();
