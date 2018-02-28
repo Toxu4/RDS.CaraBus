@@ -67,7 +67,7 @@ namespace RDS.CaraBus.RabbitMQ
             }
         }
 
-        public override async Task SubscribeAsyncImpl(Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions subscribeOptions, CancellationToken cancellationToken)
+        protected override async Task SubscribeAsyncImpl(Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions subscribeOptions, CancellationToken cancellationToken)
         {
             await EnsureConnectionAndPublishChannelCreated().ConfigureAwait(false);
 
@@ -128,7 +128,7 @@ namespace RDS.CaraBus.RabbitMQ
             _subscribeChannels.Add(channel);
         }
 
-        public override async Task PublishAsyncImpl(object message, PublishOptions publishOptions, CancellationToken cancellationToken)
+        protected override async Task PublishAsyncImpl(object message, PublishOptions publishOptions, CancellationToken cancellationToken)
         {
             await EnsureConnectionAndPublishChannelCreated().ConfigureAwait(false);
 

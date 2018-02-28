@@ -19,7 +19,7 @@ namespace RDS.CaraBus.InMemory
         {
         }
 
-        public override Task PublishAsyncImpl(object message, PublishOptions publishOptions, CancellationToken cancellationToken)
+        protected override Task PublishAsyncImpl(object message, PublishOptions publishOptions, CancellationToken cancellationToken)
         {
             var types = message.GetType().GetInheritanceChainAndInterfaces().Where(t => _exchanges.ContainsKey((publishOptions.Scope, t)));
 
@@ -31,7 +31,7 @@ namespace RDS.CaraBus.InMemory
             return Task.CompletedTask;
         }
 
-        public override Task SubscribeAsyncImpl(Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions subscribeOptions, CancellationToken cancellationToken)
+        protected override Task SubscribeAsyncImpl(Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions subscribeOptions, CancellationToken cancellationToken)
         {
             async Task Handler(object message)
             {

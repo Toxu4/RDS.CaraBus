@@ -42,7 +42,7 @@ namespace RDS.CaraBus
             return PublishAsyncImpl(message, options ?? new PublishOptions(), cancellationToken);
         }
 
-        public abstract Task PublishAsyncImpl(object message, PublishOptions publishOptions, CancellationToken cancellationToken);
+        protected abstract Task PublishAsyncImpl(object message, PublishOptions publishOptions, CancellationToken cancellationToken);
 
         public Task SubscribeAsync(Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions subscribeOptions = null, CancellationToken cancellationToken = default(CancellationToken))
         {
@@ -63,7 +63,7 @@ namespace RDS.CaraBus
             return Task.CompletedTask;
         }
 
-        public abstract Task SubscribeAsyncImpl(Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions subscribeOptions, CancellationToken cancellationToken);
+        protected abstract Task SubscribeAsyncImpl(Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions subscribeOptions, CancellationToken cancellationToken);
 
         public async Task StartAsync()
         {
