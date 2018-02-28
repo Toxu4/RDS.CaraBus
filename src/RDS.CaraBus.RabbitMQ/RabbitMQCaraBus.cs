@@ -132,11 +132,19 @@ namespace RDS.CaraBus.RabbitMQ
         {
             await EnsureConnectionAndPublishChannelCreated().ConfigureAwait(false);
 
-            var envelope = new MessageEnvelope(message, _jsonSerializerSettings);
-            var serializedEnvelope = JsonConvert.SerializeObject(envelope, _jsonSerializerSettings);
+            var messageType = message.GetType();
+
+            var serializedEnvelope = JsonConvert.SerializeObject(
+                new MessageEnvelope
+                {
+                    Type = messageType,
+                    Data = JsonConvert.SerializeObject(message, _jsonSerializerSettings)
+                },
+                _jsonSerializerSettings);
+
             var buffer = Encoding.UTF8.GetBytes(serializedEnvelope);
 
-            var types = message.GetType().GetInheritanceChainAndInterfaces();
+            var types = messageType.GetInheritanceChainAndInterfaces();
 
             foreach (var type in types)
             {

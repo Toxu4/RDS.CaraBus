@@ -44,17 +44,14 @@ namespace RDS.CaraBus
             return caraBus.SubscribeAsync(typeof(T), (message, token) => handler((T) message, token), options, cancellationToken);
         }
 
-        public static async Task StopAsync(this ICaraBus caraBus)
+        public static Task StopAsync(this ICaraBus caraBus)
         {
             if (caraBus is ICarabusStopAsync carabusStopAsync)
             {
-                await carabusStopAsync.StopAsync();
-                caraBus.Dispose();
+                return carabusStopAsync.StopAsync();
             }
-            else
-            {
-                caraBus.Dispose();
-            }
+
+            return Task.CompletedTask;
         }
     }
 }

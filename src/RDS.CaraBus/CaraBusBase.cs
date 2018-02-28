@@ -67,11 +67,6 @@ namespace RDS.CaraBus
 
         public async Task StartAsync()
         {
-            if (_options.AutoStart)
-            {
-                throw new CaraBusException("Already runned by AutoStart option");
-            }
-
             using (await _lock.LockAsync().ConfigureAwait(false))
             {
                 try
@@ -81,9 +76,9 @@ namespace RDS.CaraBus
                         throw new CaraBusException("Already running");
                     }
 
-                    foreach (var subscribeAction in _subscribeActions)
+                    while (_subscribeActions.TryTake(out var subFunc))
                     {
-                        await subscribeAction().ConfigureAwait(false);
+                        await subFunc().ConfigureAwait(false);
                     }
 
                     _isRunning = true;
