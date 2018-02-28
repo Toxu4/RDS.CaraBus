@@ -25,21 +25,21 @@ namespace RDS.CaraBus.RabbitMQ
         };
 
         private readonly ConcurrentDictionary<Type, string> _typeNames = new ConcurrentDictionary<Type, string>();
-
         private readonly IConnectionFactory _connectionFactory;
 
         private IConnection _connection;
         private IModel _publishChannel;
+        private ConcurrentBag<IModel> _subscribeChannels = new ConcurrentBag<IModel>();
 
         private readonly AsyncLock _lock = new AsyncLock();
 
-        public RabbitMQCaraBus(RabbitMQCaraBusOptions rabbitMqCaraBusCarabusOptions, ILoggerFactory loggerFactory = null)
+        public RabbitMQCaraBus(RabbitMQCaraBusOptions rabbitMQCaraBusOptions, ILoggerFactory loggerFactory = null)
             : base(
-                rabbitMqCaraBusCarabusOptions,
-                new TaskQueue(100, maxDegreeOfParallelism: rabbitMqCaraBusCarabusOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
+                rabbitMQCaraBusOptions,
+                new TaskQueue(maxItems: 100, maxDegreeOfParallelism: rabbitMQCaraBusOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
                 loggerFactory)
         {
-            _connectionFactory = new ConnectionFactory {Uri = new Uri(rabbitMqCaraBusCarabusOptions.ConnectionString)};
+            _connectionFactory = new ConnectionFactory {Uri = new Uri(rabbitMQCaraBusOptions.ConnectionString)};
         }
 
         private async Task EnsureConnectionAndPublishChannelCreated()
@@ -69,7 +69,7 @@ namespace RDS.CaraBus.RabbitMQ
 
         public override async Task SubscribeAsyncImpl(Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions subscribeOptions, CancellationToken cancellationToken)
         {
-            await EnsureConnectionAndPublishChannelCreated();
+            await EnsureConnectionAndPublishChannelCreated().ConfigureAwait(false);
 
             var exchangeName = GetExchangeName(subscribeOptions.Scope, messageType);
             var queueName = GetQueueName(messageType, subscribeOptions);
@@ -124,11 +124,13 @@ namespace RDS.CaraBus.RabbitMQ
             };
 
             channel.BasicConsume(queueName, false, consumer);
+
+            _subscribeChannels.Add(channel);
         }
 
         public override async Task PublishAsyncImpl(object message, PublishOptions publishOptions, CancellationToken cancellationToken)
         {
-            await EnsureConnectionAndPublishChannelCreated();
+            await EnsureConnectionAndPublishChannelCreated().ConfigureAwait(false);
 
             var envelope = new MessageEnvelope(message, _jsonSerializerSettings);
             var serializedEnvelope = JsonConvert.SerializeObject(envelope, _jsonSerializerSettings);
@@ -144,6 +146,52 @@ namespace RDS.CaraBus.RabbitMQ
                     _publishChannel.ExchangeDeclare(exchangeName, ExchangeType.Fanout, durable: true, autoDelete: true);
                     _publishChannel.BasicPublish(exchangeName, string.Empty, null, buffer);
                 }
+            }
+        }
+        public override void Dispose()
+        {
+            base.Dispose();
+            CloseChannels();
+            CloseConnection();
+        }
+
+        private void CloseChannels()
+        {
+            using (_lock.Lock())
+            {
+                if (_publishChannel != null && _publishChannel.IsOpen)
+                {
+                    _publishChannel.Close();
+                }
+
+                _publishChannel?.Dispose();
+                _publishChannel = null;
+
+                while (_subscribeChannels.TryTake(out var subscribeChannel))
+                {
+                    if (subscribeChannel != null && subscribeChannel.IsOpen)
+                    {
+                        subscribeChannel.Close();
+                    }
+
+                    subscribeChannel?.Dispose();
+                }
+
+                _subscribeChannels = null;
+            }
+        }
+
+        private void CloseConnection()
+        {
+            using (_lock.Lock())
+            {
+                if (_connection != null && _connection.IsOpen)
+                {
+                    _connection.Close();
+                }
+
+                _connection?.Dispose();
+                _connection = null;
             }
         }
 

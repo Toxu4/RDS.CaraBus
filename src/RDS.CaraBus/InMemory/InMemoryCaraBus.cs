@@ -12,9 +12,9 @@ namespace RDS.CaraBus.InMemory
     {
         private readonly ConcurrentDictionary<(string scope, Type type), VirtualExchange> _exchanges = new ConcurrentDictionary<(string scope, Type type), VirtualExchange>();
 
-        public InMemoryCaraBus(InMemoryCaraBusOptions startOptions, ILoggerFactory loggerFactory = null) :
-            base(startOptions,
-                new TaskQueue(maxDegreeOfParallelism: startOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
+        public InMemoryCaraBus(InMemoryCaraBusOptions inMemoryCaraBusOptions, ILoggerFactory loggerFactory = null) :
+            base(inMemoryCaraBusOptions,
+                new TaskQueue(maxDegreeOfParallelism: inMemoryCaraBusOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
                 loggerFactory)
         {
         }

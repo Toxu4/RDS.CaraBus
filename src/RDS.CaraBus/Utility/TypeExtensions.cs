@@ -2,7 +2,7 @@ using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 
-namespace RDS.CaraBus
+namespace RDS.CaraBus.Utility
 {
     internal static class TypeExtensions
     {
