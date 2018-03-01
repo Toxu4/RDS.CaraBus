@@ -85,7 +85,7 @@ namespace RDS.CaraBus
                 }
                 catch (Exception e)
                 {
-                    _logger?.LogError(e, "Cannot start");
+                    _logger.LogError(e, "Cannot start");
                     throw;
                 }
             }
@@ -110,7 +110,7 @@ namespace RDS.CaraBus
                         }
                         catch (Exception e)
                         {
-                            _logger?.LogError(e, "Cannot stop");
+                            _logger.LogError(e, "Cannot stop");
                             throw;
                         }
                     }
