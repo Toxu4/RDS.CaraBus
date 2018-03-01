@@ -12,7 +12,6 @@ using System.Reflection;
 using System.Security.Cryptography;
 using Microsoft.Extensions.Logging;
 using RDS.CaraBus.AsyncEx.Nito.AsyncEx.Coordination;
-using RDS.CaraBus.AsyncEx.Nito.AsyncEx.SyncTasks;
 using RDS.CaraBus.Utility;
 
 namespace RDS.CaraBus.RabbitMQ

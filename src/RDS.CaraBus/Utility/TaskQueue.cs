@@ -158,7 +158,7 @@ namespace RDS.CaraBus.Utility
             _workLoopCancellationTokenSource?.Cancel();
 
             //queue = clear
-            while (_queue.TryDequeue(out var result))
+            while (_queue.TryDequeue(out _))
             {
             }
         }
