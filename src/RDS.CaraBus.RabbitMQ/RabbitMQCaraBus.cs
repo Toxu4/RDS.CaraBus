@@ -39,7 +39,11 @@ namespace RDS.CaraBus.RabbitMQ
                 new TaskQueue(maxItems: 100, maxDegreeOfParallelism: rabbitMQCaraBusOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
                 loggerFactory)
         {
-            _connectionFactory = new ConnectionFactory {Uri = new Uri(rabbitMQCaraBusOptions.ConnectionString)};
+            _connectionFactory = new ConnectionFactory
+            {
+                Uri = new Uri(rabbitMQCaraBusOptions.ConnectionString),
+                DispatchConsumersAsync = true
+            };
         }
 
         private async Task EnsureConnectionAndPublishChannelCreated()
@@ -82,8 +86,8 @@ namespace RDS.CaraBus.RabbitMQ
 
             var singleAckPerChannel = new AsyncLock();
 
-            var consumer = new EventingBasicConsumer(channel);
-            consumer.Received += (model, ea) =>
+            var consumer = new AsyncEventingBasicConsumer(channel);
+            consumer.Received += async (model, ea) =>
             {
                 bool TryEnqueue() => _taskQueue.Enqueue(async () =>
                 {
@@ -119,7 +123,7 @@ namespace RDS.CaraBus.RabbitMQ
 
                 while (!cancellationToken.IsCancellationRequested && !TryEnqueue())
                 {
-                    Task.Delay(TimeSpan.FromMilliseconds(150), cancellationToken).WaitAndUnwrapException(cancellationToken);
+                    await Task.Delay(TimeSpan.FromMilliseconds(150), cancellationToken).ConfigureAwait(false);
                 }
             };
 
