@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using NUnit.Framework;
 using RDS.CaraBus.Tests.Unit;
-using NSubstitute;
-using RabbitMQ.Client;
 
 namespace RDS.CaraBus.RabbitMQ.Tests.Unit
 {
@@ -12,11 +10,15 @@ namespace RDS.CaraBus.RabbitMQ.Tests.Unit
     {
         private readonly List<IDisposable> _disposables = new List<IDisposable>();
 
-        protected override ICaraBus CreateCaraBus()
+        protected override ICaraBus CreateCaraBus(CaraBusBaseOptions caraBusBaseOptions)
         {
-            var connectionFactory = Substitute.For<IConnectionFactory>();
-
-            var caraBus = new CaraBus(connectionFactory);
+            var caraBus = new RabbitMQCaraBus(new RabbitMQCaraBusOptions
+            {
+                ConnectionString = "amqp://localhost",
+                MaxDegreeOfParallelism = caraBusBaseOptions.MaxDegreeOfParallelism,
+                AutoStart = caraBusBaseOptions.AutoStart,
+                TimeoutOnStop = caraBusBaseOptions.TimeoutOnStop
+            });
 
             _disposables.Add(caraBus);
 

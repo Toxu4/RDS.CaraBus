@@ -13,9 +13,15 @@ namespace RDS.CaraBus.InMemory.Tests.Integration
             ThreadPool.SetMaxThreads(50, 50);
             ThreadPool.SetMinThreads(50, 50);
         }
-        protected override ICaraBus CreateCaraBus()
+
+        protected override ICaraBus CreateCaraBus(CaraBusBaseOptions caraBusBaseOptions)
         {
-            return new CaraBus();
+            return new InMemoryCaraBus(new InMemoryCaraBusOptions
+            {
+                MaxDegreeOfParallelism = caraBusBaseOptions.MaxDegreeOfParallelism,
+                AutoStart = caraBusBaseOptions.AutoStart,
+                TimeoutOnStop = caraBusBaseOptions.TimeoutOnStop
+            });
         }
     }
 }

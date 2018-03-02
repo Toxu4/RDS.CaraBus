@@ -1,9 +1,14 @@
+version: 7.0.{build}
+os: Visual Studio 2017
+clone_depth: 2
 configuration: Release
-version: '{build}'
-branches:
-  only:
-  - master
-image: Visual Studio 2017
+
+pull_requests:  
+  do_not_increment_build_number: true
+
+environment:
+  DOTNET_SKIP_FIRST_TIME_EXPERIENCE: true
+  DOTNET_CLI_TELEMETRY_OPTOUT: 1
 
 init:
   - git config --global core.autocrlf input
@@ -18,13 +23,29 @@ install:
 
     update-appveyorbuild -Version "$env:versionPrefix$env:package_suffix"
 
-# build_script:
-# - ps: .\BuildAndPack.ps1 -VersionSuffix "$env:package_suffix" -GitCommitId "$env:appveyor_repo_commit" -MsBuildArgs @(, "/logger:C:\Program Files\AppVeyor\BuildAgent\Appveyor.MSBuildLogger.dll")
-
 before_build:
-- cmd: dotnet restore
+- cmd: dotnet restore -v Minimal
 
-after_build:
+build_script:
+  - ps: dotnet build -c Release
+
+before_test: 
+  - choco install rabbitmq --ignoredependencies -y 
+  - ps: (Get-Service -Name RabbitMQ).Status 
+
+test_script:
+- ps: >-
+    dotnet test .\test\RDS.CaraBus.Tests\RDS.CaraBus.Tests.csproj -f netcoreapp2.0
+
+    dotnet test .\test\RDS.CaraBus.RabbitMQ.Tests.Unit\RDS.CaraBus.RabbitMQ.Tests.Unit.csproj -f netcoreapp2.0
+
+    dotnet test .\test\RDS.CaraBus.RabbitMQ.Tests.Integration\RDS.CaraBus.RabbitMQ.Tests.Integration.csproj -f netcoreapp2.0
+
+    dotnet test .\test\RDS.CaraBus.InMemory.Tests.Unit\RDS.CaraBus.InMemory.Tests.Unit.csproj -f netcoreapp2.0
+    
+    dotnet test .\test\RDS.CaraBus.InMemory.Tests.Integration\RDS.CaraBus.InMemory.Tests.Integration.csproj -f netcoreapp2.0
+
+after_test:
 - ps: >-    
     md -Name nupkg
 
@@ -38,15 +59,6 @@ skip_commits:
 
 nuget:
   disable_publish_on_pr: true
-
-pull_requests:  
-  do_not_increment_build_number: true
-
-test:
-  assemblies:
-  - test\RDS.CaraBus.RabbitMQ.Tests.Unit\bin\Release\net462\RDS.CaraBus.RabbitMQ.Tests.Unit.dll
-  - test\RDS.CaraBus.InMemory.Tests.Unit\bin\Release\net462\RDS.CaraBus.InMemory.Tests.Unit.dll
-  - test\RDS.CaraBus.InMemory.Tests.Integration\bin\Release\net462\RDS.CaraBus.InMemory.Tests.Integration.dll
 
 artifacts:
 - path: nupkg\*.nupkg
