@@ -19,17 +19,11 @@ namespace RDS.CaraBus.Utility
 
             chain.AddRange(type.GetInterfaces());
 
-            while (true)
+            for (var current = type; current != null; current = current.BaseType)
             {
-                if (type == null)
-                {
-                    break;
-                }
-
-                chain.Insert(0, type);
-                type = type.BaseType;
+                chain.Insert(0, current);
             }
-
+            
             return chain;
         }
     }

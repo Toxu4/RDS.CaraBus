@@ -10,7 +10,7 @@ using RDS.CaraBus.Utility;
 
 namespace RDS.CaraBus
 {
-    public abstract class CaraBusBase<TOptions> : ICaraBus, ICarabusStopAsync where TOptions : CaraBusBaseOptions
+    public abstract class CaraBusBase<TOptions> : ICaraBus, ICaraBusStopAsync where TOptions : CaraBusBaseOptions
     {
         protected readonly ILogger _logger;
         protected readonly TOptions _options;

@@ -2,7 +2,7 @@
 
 namespace RDS.CaraBus
 {
-    interface ICarabusStopAsync
+    interface ICaraBusStopAsync
     {
         Task StopAsync();
     }

@@ -46,7 +46,7 @@ namespace RDS.CaraBus
 
         public static Task StopAsync(this ICaraBus caraBus)
         {
-            if (caraBus is ICarabusStopAsync carabusStopAsync)
+            if (caraBus is ICaraBusStopAsync carabusStopAsync)
             {
                 return carabusStopAsync.StopAsync();
             }

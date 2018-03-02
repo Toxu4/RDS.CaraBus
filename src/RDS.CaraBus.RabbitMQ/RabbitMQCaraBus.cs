@@ -75,7 +75,7 @@ namespace RDS.CaraBus.RabbitMQ
             await EnsureConnectionAndPublishChannelCreated().ConfigureAwait(false);
 
             var exchangeName = GetExchangeName(subscribeOptions.Scope, messageType);
-            var queueName = GetQueueName(messageType, subscribeOptions);
+            var queueName = GetQueueName(subscribeOptions, messageType);
 
             var channel = _connection.CreateModel();
 
@@ -265,7 +265,7 @@ namespace RDS.CaraBus.RabbitMQ
             return exchangeName;
         }
 
-        private string GetQueueName(Type messageType, SubscribeOptions options)
+        private string GetQueueName(SubscribeOptions options, Type messageType)
         {
             const int maxQueueNameLength = 255;
 
