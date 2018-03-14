@@ -24,9 +24,19 @@ namespace RDS.CaraBus
             }, options).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
+        public static void Subscribe(this ICaraBus caraBus, Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            caraBus.SubscribeAsync(messageType, handler, options, cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
+        public static void Subscribe(this ICaraBus caraBus, Type messageType, Func<object, Task> handler, SubscribeOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
+        {
+            caraBus.SubscribeAsync(messageType, (message, token) => handler(message), options, cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
+        }
+
         public static void Subscribe<T>(this ICaraBus caraBus, Func<T, CancellationToken, Task> handler, SubscribeOptions options = null, CancellationToken cancellationToken = default(CancellationToken)) where T : class
         {
-            caraBus.SubscribeAsync(typeof(T), (message, token) => handler((T) message, token), options, cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
+            caraBus.SubscribeAsync(typeof(T), (message, token) => handler((T)message, token), options, cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
         public static void Subscribe<T>(this ICaraBus caraBus, Func<T, Task> handler, SubscribeOptions options = null, CancellationToken cancellationToken = default(CancellationToken)) where T : class
@@ -34,14 +44,9 @@ namespace RDS.CaraBus
             caraBus.SubscribeAsync(typeof(T), (message, token) => handler((T)message), options, cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
         }
 
-        public static void Subscribe(this ICaraBus caraBus, Type messageType, Func<object, CancellationToken, Task> handler, SubscribeOptions options = null, CancellationToken cancellationToken = default(CancellationToken))
-        {
-            caraBus.SubscribeAsync(messageType, handler, options, cancellationToken).ConfigureAwait(false).GetAwaiter().GetResult();
-        }
-
         public static Task SubscribeAsync<T>(this ICaraBus caraBus, Func<T, CancellationToken, Task> handler, SubscribeOptions options = null, CancellationToken cancellationToken = default(CancellationToken)) where T : class
         {
-            return caraBus.SubscribeAsync(typeof(T), (message, token) => handler((T) message, token), options, cancellationToken);
+            return caraBus.SubscribeAsync(typeof(T), (message, token) => handler((T)message, token), options, cancellationToken);
         }
 
         public static Task StopAsync(this ICaraBus caraBus)
