@@ -35,7 +35,7 @@ namespace RDS.CaraBus.RabbitMQ
         public RabbitMQCaraBus(RabbitMQCaraBusOptions rabbitMQCaraBusOptions, ILoggerFactory loggerFactory = null)
             : base(
                 rabbitMQCaraBusOptions,
-                new TaskQueue(maxItems: 100, maxDegreeOfParallelism: rabbitMQCaraBusOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
+                new TaskQueue(maxItems: 50, maxDegreeOfParallelism: rabbitMQCaraBusOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
                 loggerFactory)
         {
             _connectionFactory = new ConnectionFactory
@@ -79,6 +79,7 @@ namespace RDS.CaraBus.RabbitMQ
 
             var channel = _connection.CreateModel();
 
+            channel.BasicQos(0, 25, true);
             channel.ExchangeDeclare(exchangeName, ExchangeType.Fanout, durable: true, autoDelete: true);
             channel.QueueDeclare(queueName, durable: true, exclusive: false, autoDelete: !subscribeOptions.IsExclusive);
             channel.QueueBind(queueName, exchangeName, string.Empty);
