@@ -179,7 +179,7 @@ namespace RDS.CaraBus.RabbitMQ
                 _publishChannel?.Dispose();
                 _publishChannel = null;
 
-                while (_subscribeChannels.TryTake(out var subscribeChannel))
+                while (_subscribeChannels != null && _subscribeChannels.TryTake(out var subscribeChannel))
                 {
                     if (subscribeChannel != null && subscribeChannel.IsOpen)
                     {
