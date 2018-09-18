@@ -14,7 +14,10 @@ namespace RDS.CaraBus.InMemory
 
         public InMemoryCaraBus(InMemoryCaraBusOptions inMemoryCaraBusOptions, ILoggerFactory loggerFactory = null) :
             base(inMemoryCaraBusOptions,
-                new TaskQueue(maxDegreeOfParallelism: inMemoryCaraBusOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
+                new TaskQueue(
+                    maxDegreeOfParallelism: inMemoryCaraBusOptions.MaxDegreeOfParallelism, 
+                    queueGrowTimeout: inMemoryCaraBusOptions.QueueGrowTimeout,
+                    loggerFactory: loggerFactory), 
                 loggerFactory)
         {
         }

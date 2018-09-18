@@ -17,12 +17,14 @@ namespace RDS.CaraBus.Utility
 
         private CancellationTokenSource _workLoopCancellationTokenSource;
         private readonly int _maxItems;
+        private readonly int _queueGrowTimeout;
         private int _working;
         private readonly ILogger _logger;
 
-        public TaskQueue(int maxItems = Int32.MaxValue, bool autoStart = true, byte maxDegreeOfParallelism = 1, ILoggerFactory loggerFactory = null)
+        public TaskQueue(int maxItems = Int32.MaxValue, bool autoStart = true, byte maxDegreeOfParallelism = 1, int queueGrowTimeout = 1000, ILoggerFactory loggerFactory = null)
         {
             _maxItems = maxItems;
+            _queueGrowTimeout = queueGrowTimeout;
             _semaphore = new SemaphoreSlim(maxDegreeOfParallelism);
             _logger = loggerFactory?.CreateLogger<TaskQueue>() ?? NullLogger<TaskQueue>.Instance;
 
@@ -68,7 +70,7 @@ namespace RDS.CaraBus.Utility
                 {
                     try
                     {
-                        bool workerAvailable = await _semaphore.WaitAsync(1000, _workLoopCancellationTokenSource.Token).ConfigureAwait(false);
+                        bool workerAvailable = await _semaphore.WaitAsync(_queueGrowTimeout, _workLoopCancellationTokenSource.Token).ConfigureAwait(false);
                         if (!_queue.TryDequeue(out var task))
                         {
                             if (workerAvailable)
