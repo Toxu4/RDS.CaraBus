@@ -35,7 +35,11 @@ namespace RDS.CaraBus.RabbitMQ
         public RabbitMQCaraBus(RabbitMQCaraBusOptions rabbitMQCaraBusOptions, ILoggerFactory loggerFactory = null)
             : base(
                 rabbitMQCaraBusOptions,
-                new TaskQueue(maxItems: 50, maxDegreeOfParallelism: rabbitMQCaraBusOptions.MaxDegreeOfParallelism, loggerFactory: loggerFactory), 
+                new TaskQueue(
+                    maxItems: 50,
+                    maxDegreeOfParallelism: rabbitMQCaraBusOptions.MaxDegreeOfParallelism,
+                    queueGrowTimeout: rabbitMQCaraBusOptions.QueueGrowTimeout,
+                    loggerFactory: loggerFactory),
                 loggerFactory)
         {
             _connectionFactory = new ConnectionFactory
