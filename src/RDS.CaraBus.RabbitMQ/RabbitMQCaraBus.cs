@@ -156,12 +156,22 @@ namespace RDS.CaraBus.RabbitMQ
 
             foreach (var type in types)
             {
+            
                 var exchangeName = GetExchangeName(publishOptions.Scope, type);
-                using (await _lock.LockAsync().ConfigureAwait(false))
-                {
-                    _publishChannel.ExchangeDeclare(exchangeName, ExchangeType.Fanout, durable: true, autoDelete: true);
-                    _publishChannel.BasicPublish(exchangeName, string.Empty, null, buffer);
-                }
+                await Retry.WithRetriesAsync(
+                        async () =>
+                        {
+                            using (await _lock.LockAsync().ConfigureAwait(false))
+                            {
+                                _publishChannel.ExchangeDeclare(exchangeName, ExchangeType.Fanout, durable: true, autoDelete: true);
+                                _publishChannel.BasicPublish(exchangeName, string.Empty, null, buffer);
+                            }
+                        },
+                        maxAttempts: 5,
+                        retryInterval: TimeSpan.FromSeconds(3),
+                        cancellationToken: cancellationToken,
+                        logger: _logger)
+                    .ConfigureAwait(false);
             }
         }
 
