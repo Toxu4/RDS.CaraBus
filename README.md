@@ -1,4 +1,4 @@
-# RDS.CaraBus [![Build status](https://ci.appveyor.com/api/projects/status/2jo09yd7rudkeny2/branch/master?svg=true)](https://ci.appveyor.com/project/Toxu4/rds-carabus/branch/master) [![license](https://img.shields.io/github/license/mashape/apistatus.svg)]()
+# RDS.CaraBus [![Build status](https://ci.appveyor.com/api/projects/status/2jo09yd7rudkeny2/branch/master?svg=true)](https://ci.appveyor.com/project/Toxu4/rds-carabus/branch/master) [![license](https://img.shields.io/github/license/toxu4/RDS.Carabus.svg)]()
 Lightweight service bus for .NET
 
 &nbsp; | `NuGet Package`
